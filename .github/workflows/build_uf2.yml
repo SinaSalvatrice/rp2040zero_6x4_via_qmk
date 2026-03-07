@@ -63,18 +63,20 @@ jobs:
 
       - name: Compile UF2 (via)
         run: |
+          mkdir -p "$QMK_HOME/artifacts"
           cd "$QMK_HOME"
-          make sina/rp2040zero_6x4_via:via
+          make sina/rp2040zero_6x4_via:via 2>&1 | tee "$QMK_HOME/artifacts/build.log"
 
       - name: Collect UF2 artifacts
         run: |
           mkdir -p "$QMK_HOME/artifacts"
-          find "$QMK_HOME" -type f -name "*.uf2" -exec cp -f {} "$QMK_HOME/artifacts/" \;
+          find "$QMK_HOME" -type f \( -name "*.uf2" -o -name "*.bin" -o -name "*.hex" -o -name "*.elf" \) \
+            -exec cp -f {} "$QMK_HOME/artifacts/" \;
           ls -la "$QMK_HOME/artifacts"
 
       - name: Upload UF2 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rp2040zero_6x4_via-uf2
-          path: ${{ env.QMK_HOME }}/artifacts/*.uf2
+          name: rp2040zero_6x4_via-build-artifacts
+          path: ${{ env.QMK_HOME }}/artifacts/*
           if-no-files-found: error
