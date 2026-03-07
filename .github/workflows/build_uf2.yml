@@ -65,22 +65,22 @@ jobs:
         run: |
           mkdir -p "$QMK_HOME/artifacts"
           cd "$QMK_HOME"
-          rm -f .build/*rp2040zero_6x4_via*via*.uf2 .build/*rp2040zero_6x4_via*via*.bin
+          find "$QMK_HOME" -type f \( -name "*rp2040zero_6x4_via*via*.uf2" -o -name "*rp2040zero_6x4_via*via*.bin" \) -delete
           make sina/rp2040zero_6x4_via:via
 
       - name: Ensure UF2 exists
         run: |
-          UF2_FILE=$(find "$QMK_HOME/.build" -maxdepth 1 -type f -name "*rp2040zero_6x4_via*via*.uf2" | head -n 1)
+          UF2_FILE=$(find "$QMK_HOME" -type f -name "*rp2040zero_6x4_via*via*.uf2" | head -n 1)
           if [ -n "$UF2_FILE" ]; then
             cp -f "$UF2_FILE" "$QMK_HOME/artifacts/firmware.uf2"
             ls -la "$QMK_HOME/artifacts/firmware.uf2"
             exit 0
           fi
 
-          BIN_FILE=$(find "$QMK_HOME/.build" -maxdepth 1 -type f -name "*rp2040zero_6x4_via*via*.bin" | head -n 1)
+          BIN_FILE=$(find "$QMK_HOME" -type f -name "*rp2040zero_6x4_via*via*.bin" | head -n 1)
           if [ -z "$BIN_FILE" ]; then
-            echo "No target .bin/.uf2 found in $QMK_HOME/.build after compile."
-            ls -la "$QMK_HOME/.build" || true
+            echo "No target .bin/.uf2 found under $QMK_HOME after compile."
+            find "$QMK_HOME" -type f \( -name "*.uf2" -o -name "*.bin" \) | head -n 50 || true
             exit 1
           fi
 
