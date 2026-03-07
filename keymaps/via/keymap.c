@@ -57,19 +57,8 @@ static uint16_t ind_tmr         = 0;
 static bool     ind_active      = false;
 static uint8_t  rgb_mode        = 0;
 static bool     user_rgb_on     = true;
-static bool     enc_btn_prev    = false;
-
-static uint8_t rotate_layer(uint8_t current_layer, bool clockwise) {
-    uint8_t layer = (current_layer > _MAKRO) ? _NUMPAD : current_layer;
-
-    if (clockwise) {
-        layer = (layer >= _MAKRO) ? _NUMPAD : (layer + 1);
-    } else {
-        layer = (layer == _NUMPAD) ? _MAKRO : (layer - 1);
-    }
-
-    return layer;
-}
+static bool     btn_released    = true;
+static uint16_t btn_tmr         = 0;
 
 static uint8_t hue_for_layer(uint8_t layer) {
     switch (layer) {
@@ -213,25 +202,21 @@ void matrix_scan_user(void) {
     }
 
 #ifdef ENCODER_BTN_PIN
-    bool pressed = (readPin(ENCODER_BTN_PIN) == 0);
-
-    if (pressed && !enc_btn_prev) {
-        layer_on(_SETTINGS);
-        render_frame();
-    } else if (!pressed && enc_btn_prev) {
-        layer_off(_SETTINGS);
-        render_frame();
+    if (timer_elapsed(btn_tmr) >= 10) {
+        bool pressed = (readPin(ENCODER_BTN_PIN) == 0);
+        if (pressed && btn_released) {
+            btn_tmr = timer_read();
+            user_rgb_on = !user_rgb_on;
+            if (!user_rgb_on) {
+                clear_all_leds();
+            } else {
+                ind_active = true;
+                ind_tmr = timer_read();
+                render_frame();
+            }
+        }
+        btn_released = !pressed;
     }
-
-    enc_btn_prev = pressed;
-#endif
-}
-
-static bool encoder_button_is_held(void) {
-#ifdef ENCODER_BTN_PIN
-    return readPin(ENCODER_BTN_PIN) == 0;
-#else
-    return false;
 #endif
 }
 
@@ -252,23 +237,6 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 #ifdef ENCODER_ENABLE
 bool encoder_update_user(uint8_t index, bool clockwise) {
     (void)index;
-
-    if (encoder_button_is_held()) {
-        uint8_t current_layer = get_highest_layer(layer_state | default_layer_state);
-        uint8_t next_layer = rotate_layer(current_layer, clockwise);
-
-        layer_move(next_layer);
-
-#ifdef ENCODER_BTN_PIN
-        if (encoder_button_is_held()) {
-            layer_on(_SETTINGS);
-        }
-#endif
-
-        last_turn = timer_read();
-        render_frame();
-        return false;
-    }
 
     if (clockwise) {
         enc_dot_pos = (enc_dot_pos + DOT_STEP_PER_TICK) % LED_COUNT;
@@ -380,21 +348,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_NAV] = LAYOUT_6x4(
-        KC_NO,                  TO(0),                MO(4),                    KC_NO,
-        KC_NO,                  KC_NO,                KC_NO,                    KC_NO,
-        LALT(LCTL(KC_LEFT)),    KC_NO,                LALT(LCTL(KC_RGHT)),      KC_NO,
-        LCTL(LGUI(KC_LEFT)),    KC_NO,                LCTL(LGUI(KC_RGHT)),      KC_NO,
-        KC_NO,                  KC_NO,                KC_NO,                    KC_PENT,
-        KC_NO,                  KC_NO,                LCTL(LALT(KC_DEL)),       KC_NO
+        KC_NO,                  MO(0),                MO(4),                KC_NO,
+        KC_NO,                  KC_NO,                KC_NO,                KC_NO,
+        LALT(LCTL(KC_LEFT)),    KC_NO,                LALT(LCTL(KC_RGHT)),  KC_NO,
+        LCTL(LGUI(KC_LEFT)),    KC_NO,                LCTL(LGUI(KC_RGHT)),  KC_NO,
+        KC_NO,                  KC_NO,                KC_NO,                KC_PENT,
+        KC_NO,                  KC_NO,                LCTL(LALT(KC_DEL)),   KC_NO
     ),
 
     [_MAKRO] = LAYOUT_6x4(
-        KC_NO,          TO(0),          MO(4),          KC_NO,
-        KC_NO,          KC_NO,          KC_NO,          KC_NO,
-        KC_F14,         KC_F15,         KC_F16,         KC_NO,
-        KC_F17,         KC_F18,         KC_F19,         KC_NO,
-        KC_F20,         KC_F21,         KC_F22,         KC_NO,
-        KC_NO,          KC_NO,          KC_NO,          KC_NO
+        KC_NO,  TO(0),  MO(4),  KC_NO,
+        KC_NO,  KC_NO,  KC_NO,  KC_NO,
+        KC_F14, KC_F15, KC_F16, KC_NO,
+        KC_F17, KC_F18, KC_F19, KC_NO,
+        KC_F20, KC_F21, KC_F22, KC_NO,
+        KC_NO,  KC_NO,  KC_NO,  KC_NO
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
