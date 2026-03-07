@@ -5,7 +5,13 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - "keyboards/sina/rp2040zero_6x4_via/**"
+      - "config.h"
+      - "info.json"
+      - "readme.md"
+      - "rp2040zero_6x4_via.c"
+      - "rp2040zero_6x4_via.h"
+      - "rules.mk"
+      - "keymaps/**"
       - ".github/workflows/build_uf2.yml"
   pull_request:
 
@@ -41,8 +47,10 @@ jobs:
 
       - name: Copy keyboard into QMK tree
         run: |
-          mkdir -p ~/qmk_firmware/keyboards/sina
-          rsync -av keyboards/sina/rp2040zero_6x4_via ~/qmk_firmware/keyboards/sina/
+          mkdir -p ~/qmk_firmware/keyboards/sina/rp2040zero_6x4_via
+          rsync -av ./ ~/qmk_firmware/keyboards/sina/rp2040zero_6x4_via/ \
+            --exclude .git \
+            --exclude .github
 
       - name: Compile UF2 (via)
         working-directory: ~/qmk_firmware
