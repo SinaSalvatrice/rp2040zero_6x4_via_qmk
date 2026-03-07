@@ -67,6 +67,28 @@ jobs:
           cd "$QMK_HOME"
           make sina/rp2040zero_6x4_via:via 2>&1 | tee "$QMK_HOME/artifacts/build.log"
 
+      - name: Ensure UF2 exists
+        run: |
+          if find "$QMK_HOME" -type f -name "*.uf2" | grep -q .; then
+            echo "UF2 already produced by build."
+            exit 0
+          fi
+
+          BIN_FILE=$(find "$QMK_HOME" -type f -name "*.bin" | head -n 1)
+          if [ -z "$BIN_FILE" ]; then
+            echo "No .bin file found to convert into UF2."
+            exit 1
+          fi
+
+          UF2_OUT="${BIN_FILE%.bin}.uf2"
+          python3 "$QMK_HOME/util/uf2conv.py" \
+            -b 0x10000000 \
+            -f 0xe48bff56 \
+            -c \
+            -o "$UF2_OUT" \
+            "$BIN_FILE"
+          ls -la "$UF2_OUT"
+
       - name: Collect UF2 artifacts
         run: |
           mkdir -p "$QMK_HOME/artifacts"
