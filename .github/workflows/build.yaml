@@ -22,7 +22,7 @@ jobs:
       QMK_HOME: /home/runner/qmk_firmware
       KB_PATH: sina/rp2040zero_6x4_via
       KM_NAME: via
-      BUILD_DIR: .build-rp2040zero_6x4_via
+      TARGET_PATTERN: "*rp2040zero_6x4_via*via*"
 
     steps:
       - name: Checkout repo
@@ -54,23 +54,31 @@ jobs:
           mkdir -p "$QMK_HOME/artifacts"
           touch "$QMK_HOME/artifacts/build.start"
           cd "$QMK_HOME"
-          make -B "$KB_PATH:$KM_NAME" BUILD_DIR="$BUILD_DIR"
+          make -B "$KB_PATH:$KM_NAME"
 
       - name: Prepare UF2 artifact
         run: |
           mkdir -p "$QMK_HOME/artifacts"
 
-          UF2_FILE=$(find "$QMK_HOME" -type f -name "*.uf2" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
+          UF2_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_PATTERN.uf2" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
           if [ -n "$UF2_FILE" ]; then
             cp -f "$UF2_FILE" "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
             ls -la "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
             exit 0
           fi
 
-          BIN_FILE=$(find "$QMK_HOME" -type f -name "*.bin" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
+          BIN_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_PATTERN.bin" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
+          if [ -z "$BIN_FILE" ]; then
+            ELF_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_PATTERN.elf" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
+            if [ -n "$ELF_FILE" ]; then
+              BIN_FILE="$QMK_HOME/artifacts/target.bin"
+              arm-none-eabi-objcopy -O binary "$ELF_FILE" "$BIN_FILE"
+            fi
+          fi
+
           if [ -z "$BIN_FILE" ]; then
             echo "No .uf2 or .bin was produced by the build."
-            find "$QMK_HOME" -type f \( -name "*.uf2" -o -name "*.bin" -o -name "*.elf" \) | head -n 100 || true
+            find "$QMK_HOME" -type f \( -name "$TARGET_PATTERN.uf2" -o -name "$TARGET_PATTERN.bin" -o -name "$TARGET_PATTERN.elf" \) | head -n 100 || true
             exit 1
           fi
 
