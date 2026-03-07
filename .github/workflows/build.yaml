@@ -35,7 +35,7 @@ jobs:
 
       - name: Build and package UF2
         run: |
-          set -e
+          set -euo pipefail
           qmk setup -H "$QMK_HOME" -y
 
           mkdir -p "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via"
@@ -44,17 +44,23 @@ jobs:
             --exclude .github
 
           cd "$QMK_HOME"
+          mkdir -p "$QMK_HOME/artifacts"
+          touch "$QMK_HOME/artifacts/build.start"
           make -B "$KB_PATH:$KM_NAME"
 
-          mkdir -p "$QMK_HOME/artifacts"
-
-          UF2_FILE=$(find "$QMK_HOME" -type f -name "*rp2040zero_6x4_via*via*.uf2" | head -n 1)
+          UF2_FILE=$(find "$QMK_HOME" -type f -name "*.uf2" -newer "$QMK_HOME/artifacts/build.start" \
+            -not -path "$QMK_HOME/lib/*" -not -path "$QMK_HOME/artifacts/*" | head -n 1)
           if [ -n "$UF2_FILE" ]; then
             cp -f "$UF2_FILE" "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
           else
-            BIN_FILE=$(find "$QMK_HOME" -type f -name "*rp2040zero_6x4_via*via*.bin" | head -n 1)
+            BIN_FILE=$(find "$QMK_HOME" -type f -name "*.bin" -newer "$QMK_HOME/artifacts/build.start" \
+              -not -path "$QMK_HOME/lib/*" -not -path "$QMK_HOME/artifacts/*" | head -n 1)
             if [ -z "$BIN_FILE" ]; then
               echo "Could not find keyboard firmware output (.uf2 or .bin)."
+              echo "Recent candidate outputs:"
+              find "$QMK_HOME" -type f -newer "$QMK_HOME/artifacts/build.start" \
+                \( -name "*.uf2" -o -name "*.bin" -o -name "*.elf" \) \
+                -not -path "$QMK_HOME/lib/*" -not -path "$QMK_HOME/artifacts/*" | head -n 50 || true
               exit 1
             fi
             python3 "$QMK_HOME/util/uf2conv.py" \
