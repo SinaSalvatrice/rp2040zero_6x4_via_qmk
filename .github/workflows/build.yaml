@@ -51,25 +51,26 @@ jobs:
 
       - name: Compile firmware
         run: |
+          mkdir -p "$QMK_HOME/artifacts"
+          touch "$QMK_HOME/artifacts/build.start"
           cd "$QMK_HOME"
-          rm -rf "$BUILD_DIR"
-          make "$KB_PATH:$KM_NAME" BUILD_DIR="$BUILD_DIR"
+          make -B "$KB_PATH:$KM_NAME" BUILD_DIR="$BUILD_DIR"
 
       - name: Prepare UF2 artifact
         run: |
           mkdir -p "$QMK_HOME/artifacts"
 
-          UF2_FILE=$(find "$QMK_HOME/$BUILD_DIR" -type f -name "*.uf2" | head -n 1)
+          UF2_FILE=$(find "$QMK_HOME" -type f -name "*.uf2" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
           if [ -n "$UF2_FILE" ]; then
             cp -f "$UF2_FILE" "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
             ls -la "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
             exit 0
           fi
 
-          BIN_FILE=$(find "$QMK_HOME/$BUILD_DIR" -type f -name "*.bin" | head -n 1)
+          BIN_FILE=$(find "$QMK_HOME" -type f -name "*.bin" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
           if [ -z "$BIN_FILE" ]; then
             echo "No .uf2 or .bin was produced by the build."
-            find "$QMK_HOME/$BUILD_DIR" -type f | head -n 100 || true
+            find "$QMK_HOME" -type f \( -name "*.uf2" -o -name "*.bin" -o -name "*.elf" \) | head -n 100 || true
             exit 1
           fi
 
