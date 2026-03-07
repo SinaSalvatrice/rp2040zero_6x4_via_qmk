@@ -22,76 +22,52 @@ jobs:
       QMK_HOME: /home/runner/qmk_firmware
       KB_PATH: sina/rp2040zero_6x4_via
       KM_NAME: via
-      TARGET_PATTERN: "*rp2040zero_6x4_via*via*"
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y rsync gcc-arm-none-eabi binutils-arm-none-eabi python3-pip git
-
-      - name: Install QMK CLI
-        run: |
           python3 -m pip install --upgrade pip
           pip install qmk
 
-      - name: Set up QMK firmware tree
+      - name: Build and package UF2
         run: |
+          set -e
           qmk setup -H "$QMK_HOME" -y
 
-      - name: Copy keyboard into QMK tree
-        run: |
           mkdir -p "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via"
           rsync -av ./ "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via/" \
             --exclude .git \
             --exclude .github
 
-      - name: Compile firmware
-        run: |
-          mkdir -p "$QMK_HOME/artifacts"
-          touch "$QMK_HOME/artifacts/build.start"
           cd "$QMK_HOME"
           make -B "$KB_PATH:$KM_NAME"
 
-      - name: Prepare UF2 artifact
-        run: |
           mkdir -p "$QMK_HOME/artifacts"
 
-          UF2_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_PATTERN.uf2" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
+          UF2_FILE=$(find "$QMK_HOME" -type f -name "*rp2040zero_6x4_via*via*.uf2" | head -n 1)
           if [ -n "$UF2_FILE" ]; then
             cp -f "$UF2_FILE" "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
-            ls -la "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
-            exit 0
-          fi
-
-          BIN_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_PATTERN.bin" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
-          if [ -z "$BIN_FILE" ]; then
-            ELF_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_PATTERN.elf" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
-            if [ -n "$ELF_FILE" ]; then
-              BIN_FILE="$QMK_HOME/artifacts/target.bin"
-              arm-none-eabi-objcopy -O binary "$ELF_FILE" "$BIN_FILE"
+          else
+            BIN_FILE=$(find "$QMK_HOME" -type f -name "*rp2040zero_6x4_via*via*.bin" | head -n 1)
+            if [ -z "$BIN_FILE" ]; then
+              echo "Could not find keyboard firmware output (.uf2 or .bin)."
+              exit 1
             fi
+            python3 "$QMK_HOME/util/uf2conv.py" \
+              -b 0x10000000 \
+              -f 0xe48bff56 \
+              -c \
+              -o "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2" \
+              "$BIN_FILE"
           fi
-
-          if [ -z "$BIN_FILE" ]; then
-            echo "No .uf2 or .bin was produced by the build."
-            find "$QMK_HOME" -type f \( -name "$TARGET_PATTERN.uf2" -o -name "$TARGET_PATTERN.bin" -o -name "$TARGET_PATTERN.elf" \) | head -n 100 || true
-            exit 1
-          fi
-
-          python3 "$QMK_HOME/util/uf2conv.py" \
-            -b 0x10000000 \
-            -f 0xe48bff56 \
-            -c \
-            -o "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2" \
-            "$BIN_FILE"
 
           ls -la "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
 
-      - name: Upload UF2 artifact
+      - name: Upload UF2
         uses: actions/upload-artifact@v4
         with:
           name: rp2040zero_6x4_via-uf2
