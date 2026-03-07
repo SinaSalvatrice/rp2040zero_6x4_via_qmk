@@ -44,8 +44,8 @@ jobs:
             --exclude .git \
             --exclude .github
 
-          mkdir -p "$QMK_HOME/keyboards/rp2040_4x6_working_QMK"
-          rsync -av ./ "$QMK_HOME/keyboards/rp2040_4x6_working_QMK/" \
+          mkdir -p "$QMK_HOME/keyboards/rp2040_4x6_working_qmk"
+          rsync -av ./ "$QMK_HOME/keyboards/rp2040_4x6_working_qmk/" \
             --exclude .git \
             --exclude .github
 
@@ -56,8 +56,8 @@ jobs:
           BUILD_OK=0
           for TARGET in \
             "sina/rp2040zero_6x4_via:via" \
-            "rp2040_4x6_working_QMK:via" \
-            "rp2040_4x6_working_QMK:default"
+            "rp2040_4x6_working_qmk:via" \
+            "rp2040_4x6_working_qmk:default"
           do
             echo "Trying build target: $TARGET"
             if make -B "$TARGET"; then

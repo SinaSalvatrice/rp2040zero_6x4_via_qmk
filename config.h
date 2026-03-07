@@ -3,8 +3,8 @@
 #define VENDOR_ID       0x5349
 #define PRODUCT_ID      0x6401
 #define DEVICE_VER      0x0001
-#define MANUFACTURER    Sina
-#define PRODUCT         RP2040 Zero 6x4 VIA
+#define MANUFACTURER    "Sina"
+#define PRODUCT         "RP2040 Zero 6x4 VIA"
 
 #define MATRIX_ROWS 6
 #define MATRIX_COLS 4
