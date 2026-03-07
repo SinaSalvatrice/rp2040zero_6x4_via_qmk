@@ -6,7 +6,7 @@ on:
     branches: ["main"]
     paths:
       - "config.h"
-      - "info.json"
+      - "keyboard.json"
       - "readme.md"
       - "rp2040zero_6x4_via.c"
       - "rp2040zero_6x4_via.h"
@@ -55,9 +55,7 @@ jobs:
 
           BUILD_OK=0
           for TARGET in \
-            "sina/rp2040zero_6x4_via:via" \
-            "rp2040_4x6_working_QMK:via" \
-            "rp2040_4x6_working_QMK:default"
+            "sina/rp2040zero_6x4_via:via"
           do
             echo "Trying build target: $TARGET"
             if make -B "$TARGET"; then
