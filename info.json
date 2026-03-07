@@ -10,6 +10,11 @@
     "rows": ["GP0", "GP1", "GP2", "GP3", "GP4", "GP5"],
     "cols": ["GP6", "GP7", "GP8", "GP9"]
   },
+  "encoder": {
+    "rotary": [
+      {"pin_a": "GP10", "pin_b": "GP11", "resolution": 4}
+    ]
+  },
   "features": {
     "bootmagic": true,
     "command": false,
