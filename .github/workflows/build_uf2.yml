@@ -20,7 +20,6 @@ permissions:
 
 env:
   QMK_HOME: /home/runner/qmk_firmware
-  TARGET_STEM: sina_rp2040zero_6x4_via_via
 
 jobs:
   build:
@@ -65,25 +64,26 @@ jobs:
       - name: Compile UF2 (via)
         run: |
           mkdir -p "$QMK_HOME/artifacts"
+          touch "$QMK_HOME/artifacts/build.start"
           cd "$QMK_HOME"
           make sina/rp2040zero_6x4_via:via
 
       - name: Ensure UF2 exists
         run: |
-          UF2_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_STEM.uf2" | head -n 1)
+          UF2_FILE=$(find "$QMK_HOME" -type f -name "*.uf2" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
           if [ -n "$UF2_FILE" ]; then
-            cp -f "$UF2_FILE" "$QMK_HOME/artifacts/$TARGET_STEM.uf2"
-            ls -la "$QMK_HOME/artifacts/$TARGET_STEM.uf2"
+            cp -f "$UF2_FILE" "$QMK_HOME/artifacts/firmware.uf2"
+            ls -la "$QMK_HOME/artifacts/firmware.uf2"
             exit 0
           fi
 
-          BIN_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_STEM.bin" | head -n 1)
+          BIN_FILE=$(find "$QMK_HOME" -type f -name "*.bin" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
           if [ -z "$BIN_FILE" ]; then
-            echo "No target .bin/.uf2 file found for $TARGET_STEM."
+            echo "No newly built .bin/.uf2 file found for this run."
             exit 1
           fi
 
-          UF2_OUT="$QMK_HOME/artifacts/$TARGET_STEM.uf2"
+          UF2_OUT="$QMK_HOME/artifacts/firmware.uf2"
           python3 "$QMK_HOME/util/uf2conv.py" \
             -b 0x10000000 \
             -f 0xe48bff56 \
