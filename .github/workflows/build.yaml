@@ -1,0 +1,90 @@
+name: Build UF2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "config.h"
+      - "info.json"
+      - "readme.md"
+      - "rp2040zero_6x4_via.c"
+      - "rp2040zero_6x4_via.h"
+      - "rules.mk"
+      - "keymaps/**"
+      - ".github/workflows/build.yaml"
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      QMK_HOME: /home/runner/qmk_firmware
+      KB_PATH: sina/rp2040zero_6x4_via
+      KM_NAME: via
+      BUILD_DIR: .build-rp2040zero_6x4_via
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync gcc-arm-none-eabi binutils-arm-none-eabi python3-pip git
+
+      - name: Install QMK CLI
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install qmk
+
+      - name: Set up QMK firmware tree
+        run: |
+          qmk setup -H "$QMK_HOME" -y
+
+      - name: Copy keyboard into QMK tree
+        run: |
+          mkdir -p "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via"
+          rsync -av ./ "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via/" \
+            --exclude .git \
+            --exclude .github
+
+      - name: Compile firmware
+        run: |
+          cd "$QMK_HOME"
+          rm -rf "$BUILD_DIR"
+          make "$KB_PATH:$KM_NAME" BUILD_DIR="$BUILD_DIR"
+
+      - name: Prepare UF2 artifact
+        run: |
+          mkdir -p "$QMK_HOME/artifacts"
+
+          UF2_FILE=$(find "$QMK_HOME/$BUILD_DIR" -type f -name "*.uf2" | head -n 1)
+          if [ -n "$UF2_FILE" ]; then
+            cp -f "$UF2_FILE" "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
+            ls -la "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
+            exit 0
+          fi
+
+          BIN_FILE=$(find "$QMK_HOME/$BUILD_DIR" -type f -name "*.bin" | head -n 1)
+          if [ -z "$BIN_FILE" ]; then
+            echo "No .uf2 or .bin was produced by the build."
+            find "$QMK_HOME/$BUILD_DIR" -type f | head -n 100 || true
+            exit 1
+          fi
+
+          python3 "$QMK_HOME/util/uf2conv.py" \
+            -b 0x10000000 \
+            -f 0xe48bff56 \
+            -c \
+            -o "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2" \
+            "$BIN_FILE"
+
+          ls -la "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
+
+      - name: Upload UF2 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rp2040zero_6x4_via-uf2
+          path: ${{ env.QMK_HOME }}/artifacts/rp2040zero_6x4_via.uf2
+          if-no-files-found: error
