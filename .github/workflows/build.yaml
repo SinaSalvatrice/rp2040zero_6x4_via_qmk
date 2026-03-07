@@ -39,6 +39,30 @@ jobs:
           git clone --depth 1 https://github.com/qmk/qmk_firmware.git ~/qmk_firmware
           qmk config user.qmk_home=~/qmk_firmware
 
+          cd "$QMK_HOME"
+          mkdir -p "$QMK_HOME/artifacts"
+          touch "$QMK_HOME/artifacts/build.start"
+
+          BUILD_OK=0
+          for TARGET in \
+            "sina/rp2040zero_6x4_via:via"
+          do
+            echo "Trying build target: $TARGET"
+            if make -B "$TARGET"; then
+              echo "$TARGET" > "$QMK_HOME/artifacts/compiled_target.txt"
+              TARGET_SAFE=$(echo "$TARGET" | tr '/:' '__')
+              echo "$TARGET_SAFE" > "$QMK_HOME/artifacts/compiled_target_safe.txt"
+              BUILD_OK=1
+              break
+            fi
+          done
+
+          if [ "$BUILD_OK" -ne 1 ]; then
+            echo "All build targets failed."
+            exit 1
+          fi
+
+          TARGET_SAFE=$(cat "$QMK_HOME/artifacts/compiled_target_safe.txt")
       - name: Copy keyboard into QMK tree
         run: |
           mkdir -p ~/qmk_firmware/keyboards/rp2040zero_6x4_via_qmk

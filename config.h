@@ -1,5 +1,18 @@
 #pragma once
 
+#define VENDOR_ID       0x5349
+#define PRODUCT_ID      0x6401
+#define DEVICE_VER      0x0001
+#define MANUFACTURER    "Sina"
+#define PRODUCT         "RP2040 Zero 6x4 VIA"
+
+#define MATRIX_ROWS 6
+#define MATRIX_COLS 4
+
+#define MATRIX_ROW_PINS { GP0, GP1, GP2, GP3, GP4, GP5 }
+#define MATRIX_COL_PINS { GP6, GP7, GP8, GP9 }
+#define DIODE_DIRECTION ROW2COL
+
 #define ENCODER_BTN_PIN GP12
 
 #define WS2812_DI_PIN GP13
