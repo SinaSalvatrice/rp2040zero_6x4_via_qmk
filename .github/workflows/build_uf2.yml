@@ -55,10 +55,16 @@ jobs:
             --exclude .git \
             --exclude .github
 
+      - name: Verify copied keyboard files
+        run: |
+          test -f "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via/rules.mk"
+          test -f "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via/keymaps/via/keymap.c"
+          ls -la "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via"
+
       - name: Compile UF2 (via)
         run: |
           cd "$QMK_HOME"
-          qmk compile -kb sina/rp2040zero_6x4_via -km via
+          make sina/rp2040zero_6x4_via:via
 
       - name: Upload UF2 artifact
         uses: actions/upload-artifact@v4
