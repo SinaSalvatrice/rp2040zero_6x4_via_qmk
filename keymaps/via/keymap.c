@@ -57,8 +57,18 @@ static uint16_t ind_tmr         = 0;
 static bool     ind_active      = false;
 static uint8_t  rgb_mode        = 0;
 static bool     user_rgb_on     = true;
-static bool     btn_released    = true;
-static uint16_t btn_tmr         = 0;
+
+static uint8_t rotate_layer(uint8_t current_layer, bool clockwise) {
+    uint8_t layer = (current_layer > _MAKRO) ? _NUMPAD : current_layer;
+
+    if (clockwise) {
+        layer = (layer >= _MAKRO) ? _NUMPAD : (layer + 1);
+    } else {
+        layer = (layer == _NUMPAD) ? _MAKRO : (layer - 1);
+    }
+
+    return layer;
+}
 
 static uint8_t hue_for_layer(uint8_t layer) {
     switch (layer) {
@@ -201,23 +211,10 @@ void matrix_scan_user(void) {
         render_frame();
     }
 
-#ifdef ENCODER_BTN_PIN
-    if (timer_elapsed(btn_tmr) >= 10) {
-        bool pressed = (readPin(ENCODER_BTN_PIN) == 0);
-        if (pressed && btn_released) {
-            btn_tmr = timer_read();
-            user_rgb_on = !user_rgb_on;
-            if (!user_rgb_on) {
-                clear_all_leds();
-            } else {
-                ind_active = true;
-                ind_tmr = timer_read();
-                render_frame();
-            }
-        }
-        btn_released = !pressed;
-    }
-#endif
+}
+
+static bool encoder_button_is_held(void) {
+    return layer_state_is(_SETTINGS);
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
@@ -238,17 +235,28 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 bool encoder_update_user(uint8_t index, bool clockwise) {
     (void)index;
 
+    if (encoder_button_is_held()) {
+        uint8_t current_layer = get_highest_layer(layer_state | default_layer_state);
+        uint8_t next_layer = rotate_layer(current_layer, clockwise);
+
+        layer_move(next_layer);
+
+    layer_on(_SETTINGS);
+
+        last_turn = timer_read();
+        render_frame();
+        return false;
+    }
+
     if (clockwise) {
         enc_dot_pos = (enc_dot_pos + DOT_STEP_PER_TICK) % LED_COUNT;
-        tap_code(MS_WHLU);
     } else {
         enc_dot_pos = (enc_dot_pos + LED_COUNT - (DOT_STEP_PER_TICK % LED_COUNT)) % LED_COUNT;
-        tap_code(MS_WHLD);
     }
 
     last_turn = timer_read();
     render_frame();
-    return false;
+    return true;
 }
 #endif
 
@@ -330,12 +338,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_NUMPAD] = LAYOUT_6x4(
-        KC_NO,   MO(1),   MO(4),   KC_BSPC,
-        KC_NUM,  KC_PAST, KC_PSLS, KC_PMNS,
-        KC_P7,   KC_P8,   KC_P9,   KC_PPLS,
-        KC_P4,   KC_P5,   KC_P6,   KC_NO,
-        KC_P1,   KC_P2,   KC_P3,   KC_PENT,
-        KC_NO,   KC_P0,   KC_PDOT, KC_NO
+        KC_NO,          MO(1),          MO(4),          KC_BSPC,
+        KC_NUM,         KC_PAST,        KC_PSLS,        KC_PMNS,
+        KC_P7,          KC_P8,          KC_P9,          KC_PPLS,
+        KC_P4,          KC_P5,          KC_P6,          KC_NO,
+        KC_P1,          KC_P2,          KC_P3,          KC_PENT,
+        KC_NO,          KC_P0,          KC_PDOT,        KC_NO
     ),
 
     [_EDIT] = LAYOUT_6x4(
@@ -348,12 +356,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_NAV] = LAYOUT_6x4(
-        KC_NO,                  MO(0),                MO(4),                KC_NO,
-        KC_NO,                  KC_NO,                KC_NO,                KC_NO,
-        LALT(LCTL(KC_LEFT)),    KC_NO,                LALT(LCTL(KC_RGHT)),  KC_NO,
-        LCTL(LGUI(KC_LEFT)),    KC_NO,                LCTL(LGUI(KC_RGHT)),  KC_NO,
-        KC_NO,                  KC_NO,                KC_NO,                KC_PENT,
-        KC_NO,                  KC_NO,                LCTL(LALT(KC_DEL)),   KC_NO
+        KC_NO,                   TO(0),                MO(4),                    KC_NO,
+        KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
+        KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
+        LALT(LCTL(KC_LEFT)),     KC_NO,                LALT(LCTL(KC_RGHT)),      KC_NO,
+        LCTL(LGUI(KC_LEFT)),     KC_NO,                LCTL(LGUI(KC_RGHT)),      KC_NO,
+        KC_NO,                   KC_NO,                LCTL(LALT(KC_DEL)),       KC_NO
     ),
 
     [_MAKRO] = LAYOUT_6x4(
@@ -366,11 +374,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
-        KC_NO,          TO(0),          MO(4),          QK_BOOT,
-        RGB_UI_WSPD_UP, RGB_UI_WSPD_DN, RGB_UI_HUI,     RGB_UI_HUD,
-        RGB_UI_VAI,     RGB_UI_VAD,     RGB_UI_WTOG,    RGB_UI_TOG,
-        RGB_UI_SAI,     RGB_UI_SAD,     KC_NO,          KC_NO,
-        TO(1),          TO(2),          TO(3),          KC_NO,
-        KC_NO,          KC_NO,          KC_NO,          KC_NO
+        KC_NO,          TO(0),                  MO(4),              QK_BOOT,
+        RGB_UI_WSPD_UP, RGB_UI_WSPD_DN,         RGB_UI_HUI,         RGB_UI_HUD,
+        RGB_UI_VAI,     RGB_UI_VAD,             RGB_UI_WTOG,        RGB_UI_TOG,
+        RGB_UI_SAI,     RGB_UI_SAD,             KC_NO,              KC_NO,
+        TO(1),          TO(2),                  TO(3),              KC_NO,
+        KC_NO,          KC_NO,                  KC_NO,              KC_NO
     )
 };
