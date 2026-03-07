@@ -18,6 +18,9 @@ on:
 permissions:
   contents: write
 
+env:
+  QMK_HOME: /home/runner/qmk_firmware
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -43,17 +46,17 @@ jobs:
 
       - name: Set up QMK firmware
         run: |
-          qmk setup -H ~/qmk_firmware -y
+          qmk setup -H "$QMK_HOME" -y
 
       - name: Copy keyboard into QMK tree
         run: |
-          mkdir -p ~/qmk_firmware/keyboards/sina/rp2040zero_6x4_via
-          rsync -av ./ ~/qmk_firmware/keyboards/sina/rp2040zero_6x4_via/ \
+          mkdir -p "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via"
+          rsync -av ./ "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via/" \
             --exclude .git \
             --exclude .github
 
       - name: Compile UF2 (via)
-        working-directory: ~/qmk_firmware
+        working-directory: ${{ env.QMK_HOME }}
         run: |
           qmk compile -kb sina/rp2040zero_6x4_via -km via
 
@@ -61,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rp2040zero_6x4_via-uf2
-          path: ~/qmk_firmware/*.uf2
+          path: ${{ env.QMK_HOME }}/*.uf2
           if-no-files-found: error
