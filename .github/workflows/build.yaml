@@ -15,6 +15,9 @@ on:
       - ".github/workflows/build.yaml"
   pull_request:
 
+env:
+  QMK_HOME: ${{ github.workspace }}/qmk_firmware
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -62,7 +65,7 @@ jobs:
           for TARGET in \
             "sina/rp2040zero_6x4_via:via" \
             "rp2040_4x6_working_qmk:via" \
-            "rp2040_4x6_working_qmk:default"
+            "rp2040_4x6_working_qmk:default" \
             "sina/rp2040zero_6x4_via:via"
           do
             echo "Trying build target: $TARGET"
