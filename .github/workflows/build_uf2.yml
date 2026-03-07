@@ -20,6 +20,7 @@ permissions:
 
 env:
   QMK_HOME: /home/runner/qmk_firmware
+  TARGET_STEM: sina_rp2040zero_6x4_via_via
 
 jobs:
   build:
@@ -65,22 +66,24 @@ jobs:
         run: |
           mkdir -p "$QMK_HOME/artifacts"
           cd "$QMK_HOME"
-          make sina/rp2040zero_6x4_via:via 2>&1 | tee "$QMK_HOME/artifacts/build.log"
+          make sina/rp2040zero_6x4_via:via
 
       - name: Ensure UF2 exists
         run: |
-          if find "$QMK_HOME" -type f -name "*.uf2" | grep -q .; then
-            echo "UF2 already produced by build."
+          UF2_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_STEM.uf2" | head -n 1)
+          if [ -n "$UF2_FILE" ]; then
+            cp -f "$UF2_FILE" "$QMK_HOME/artifacts/$TARGET_STEM.uf2"
+            ls -la "$QMK_HOME/artifacts/$TARGET_STEM.uf2"
             exit 0
           fi
 
-          BIN_FILE=$(find "$QMK_HOME" -type f -name "*.bin" | head -n 1)
+          BIN_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_STEM.bin" | head -n 1)
           if [ -z "$BIN_FILE" ]; then
-            echo "No .bin file found to convert into UF2."
+            echo "No target .bin/.uf2 file found for $TARGET_STEM."
             exit 1
           fi
 
-          UF2_OUT="${BIN_FILE%.bin}.uf2"
+          UF2_OUT="$QMK_HOME/artifacts/$TARGET_STEM.uf2"
           python3 "$QMK_HOME/util/uf2conv.py" \
             -b 0x10000000 \
             -f 0xe48bff56 \
@@ -92,13 +95,11 @@ jobs:
       - name: Collect UF2 artifacts
         run: |
           mkdir -p "$QMK_HOME/artifacts"
-          find "$QMK_HOME" -type f \( -name "*.uf2" -o -name "*.bin" -o -name "*.hex" -o -name "*.elf" \) \
-            -exec cp -f {} "$QMK_HOME/artifacts/" \;
           ls -la "$QMK_HOME/artifacts"
 
       - name: Upload UF2 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rp2040zero_6x4_via-build-artifacts
-          path: ${{ env.QMK_HOME }}/artifacts/*
+          name: rp2040zero_6x4_via-uf2
+          path: ${{ env.QMK_HOME }}/artifacts/*.uf2
           if-no-files-found: error
