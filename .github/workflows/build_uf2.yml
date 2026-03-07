@@ -56,8 +56,8 @@ jobs:
             --exclude .github
 
       - name: Compile UF2 (via)
-        working-directory: ${{ env.QMK_HOME }}
         run: |
+          cd "$QMK_HOME"
           qmk compile -kb sina/rp2040zero_6x4_via -km via
 
       - name: Upload UF2 artifact
