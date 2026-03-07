@@ -20,8 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       QMK_HOME: /home/runner/qmk_firmware
-      KB_PATH: sina/rp2040zero_6x4_via
-      KM_NAME: via
 
     steps:
       - uses: actions/checkout@v4
@@ -43,10 +41,33 @@ jobs:
             --exclude .git \
             --exclude .github
 
+          mkdir -p "$QMK_HOME/keyboards/rp2040_4x6_working_QMK"
+          rsync -av ./ "$QMK_HOME/keyboards/rp2040_4x6_working_QMK/" \
+            --exclude .git \
+            --exclude .github
+
           cd "$QMK_HOME"
           mkdir -p "$QMK_HOME/artifacts"
           touch "$QMK_HOME/artifacts/build.start"
-          make -B "$KB_PATH:$KM_NAME"
+
+          BUILD_OK=0
+          for TARGET in \
+            "sina/rp2040zero_6x4_via:via" \
+            "rp2040_4x6_working_QMK:via" \
+            "rp2040_4x6_working_QMK:default"
+          do
+            echo "Trying build target: $TARGET"
+            if make -B "$TARGET"; then
+              echo "$TARGET" > "$QMK_HOME/artifacts/compiled_target.txt"
+              BUILD_OK=1
+              break
+            fi
+          done
+
+          if [ "$BUILD_OK" -ne 1 ]; then
+            echo "All build targets failed."
+            exit 1
+          fi
 
           UF2_FILE=$(find "$QMK_HOME" -type f -name "*.uf2" -newer "$QMK_HOME/artifacts/build.start" \
             -not -path "$QMK_HOME/lib/*" -not -path "$QMK_HOME/artifacts/*" | head -n 1)
