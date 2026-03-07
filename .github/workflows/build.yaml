@@ -35,10 +35,52 @@ jobs:
 
       - name: Set up QMK firmware tree
         run: |
+          set -euo pipefail
+          qmk setup -H "$QMK_HOME" -y
+
+          test -f "./rules.mk"
+          test -f "./keymaps/via/keymap.c"
+
+          mkdir -p "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via"
+          rsync -av ./ "$QMK_HOME/keyboards/sina/rp2040zero_6x4_via/" \
+            --exclude .git \
+            --exclude .github
+
+          mkdir -p "$QMK_HOME/keyboards/rp2040_4x6_working_qmk"
+          rsync -av ./ "$QMK_HOME/keyboards/rp2040_4x6_working_qmk/" \
+            --exclude .git \
+            --exclude .github
           rm -rf ~/qmk_firmware
           git clone --depth 1 https://github.com/qmk/qmk_firmware.git ~/qmk_firmware
           qmk config user.qmk_home=~/qmk_firmware
 
+          cd "$QMK_HOME"
+          mkdir -p "$QMK_HOME/artifacts"
+          touch "$QMK_HOME/artifacts/build.start"
+
+          BUILD_OK=0
+          for TARGET in \
+            "sina/rp2040zero_6x4_via:via" \
+            "rp2040_4x6_working_qmk:via" \
+            "rp2040_4x6_working_qmk:default"
+            "sina/rp2040zero_6x4_via:via"
+          do
+            echo "Trying build target: $TARGET"
+            if make -B "$TARGET"; then
+              echo "$TARGET" > "$QMK_HOME/artifacts/compiled_target.txt"
+              TARGET_SAFE=$(echo "$TARGET" | tr '/:' '__')
+              echo "$TARGET_SAFE" > "$QMK_HOME/artifacts/compiled_target_safe.txt"
+              BUILD_OK=1
+              break
+            fi
+          done
+
+          if [ "$BUILD_OK" -ne 1 ]; then
+            echo "All build targets failed."
+            exit 1
+          fi
+
+          TARGET_SAFE=$(cat "$QMK_HOME/artifacts/compiled_target_safe.txt")
       - name: Copy keyboard into QMK tree
         run: |
           mkdir -p ~/qmk_firmware/keyboards/rp2040zero_6x4_via_qmk
