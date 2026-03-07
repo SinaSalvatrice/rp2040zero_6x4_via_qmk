@@ -12,7 +12,7 @@ Handwired QMK keyboard for RP2040 Zero.
 
 ## Build locally
 ```bash
-qmk compile -kb sina/rp2040zero_6x4_via -km via
+qmk compile -kb rp2040zero_6x4_via_qmk -km via
 ```
 
 ## Flash
