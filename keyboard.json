@@ -3,6 +3,11 @@
   "maintainer": "Sina",
   "manufacturer": "Sina",
   "url": "https://github.com/SinaSalvatrice",
+  "usb": {
+    "vid": "0x5349",
+    "pid": "0x6401",
+    "device_version": "0.0.1"
+  },
   "processor": "RP2040",
   "bootloader": "rp2040",
   "diode_direction": "ROW2COL",
