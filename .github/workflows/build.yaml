@@ -1,12 +1,12 @@
-name: Build UF2
+name: Build QMK Firmware (rp2040zero_6x4_via_qmk)
 
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: [ main ]
     paths:
       - "config.h"
-      - "info.json"
+      - "keyboard.json"
       - "readme.md"
       - "rp2040zero_6x4_via.c"
       - "rp2040zero_6x4_via.h"
@@ -18,20 +18,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      QMK_HOME: /home/runner/qmk_firmware
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install tools
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install QMK CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y rsync gcc-arm-none-eabi binutils-arm-none-eabi python3-pip git
-          python3 -m pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install qmk
 
-      - name: Build and package UF2
+      - name: Set up QMK firmware tree
         run: |
           set -euo pipefail
           qmk setup -H "$QMK_HOME" -y
@@ -48,6 +50,9 @@ jobs:
           rsync -av ./ "$QMK_HOME/keyboards/rp2040_4x6_working_qmk/" \
             --exclude .git \
             --exclude .github
+          rm -rf ~/qmk_firmware
+          git clone --depth 1 https://github.com/qmk/qmk_firmware.git ~/qmk_firmware
+          qmk config user.qmk_home=~/qmk_firmware
 
           cd "$QMK_HOME"
           mkdir -p "$QMK_HOME/artifacts"
@@ -58,6 +63,7 @@ jobs:
             "sina/rp2040zero_6x4_via:via" \
             "rp2040_4x6_working_qmk:via" \
             "rp2040_4x6_working_qmk:default"
+            "sina/rp2040zero_6x4_via:via"
           do
             echo "Trying build target: $TARGET"
             if make -B "$TARGET"; then
@@ -75,42 +81,33 @@ jobs:
           fi
 
           TARGET_SAFE=$(cat "$QMK_HOME/artifacts/compiled_target_safe.txt")
+      - name: Copy keyboard into QMK tree
+        run: |
+          mkdir -p ~/qmk_firmware/keyboards/rp2040zero_6x4_via_qmk
+          rsync -a --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            "$GITHUB_WORKSPACE/" \
+            ~/qmk_firmware/keyboards/rp2040zero_6x4_via_qmk/
 
-          UF2_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_SAFE.uf2" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
-          if [ -z "$UF2_FILE" ]; then
-            UF2_FILE=$(find "$QMK_HOME" -type f -name "*.uf2" -newer "$QMK_HOME/artifacts/build.start" \
-              -not -path "$QMK_HOME/lib/*" -not -path "$QMK_HOME/artifacts/*" | head -n 1)
-          fi
+      - name: Install ARM GCC toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
 
-          if [ -n "$UF2_FILE" ]; then
-            cp -f "$UF2_FILE" "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
-          else
-            BIN_FILE=$(find "$QMK_HOME" -type f -name "$TARGET_SAFE.bin" -newer "$QMK_HOME/artifacts/build.start" | head -n 1)
-            if [ -z "$BIN_FILE" ]; then
-              BIN_FILE=$(find "$QMK_HOME" -type f -name "*.bin" -newer "$QMK_HOME/artifacts/build.start" \
-                -not -path "$QMK_HOME/lib/*" -not -path "$QMK_HOME/artifacts/*" | head -n 1)
-            fi
-            if [ -z "$BIN_FILE" ]; then
-              echo "Could not find keyboard firmware output (.uf2 or .bin)."
-              echo "Recent candidate outputs:"
-              find "$QMK_HOME" -type f -newer "$QMK_HOME/artifacts/build.start" \
-                \( -name "*.uf2" -o -name "*.bin" -o -name "*.elf" \) \
-                -not -path "$QMK_HOME/lib/*" -not -path "$QMK_HOME/artifacts/*" | head -n 50 || true
-              exit 1
-            fi
-            python3 "$QMK_HOME/util/uf2conv.py" \
-              -b 0x10000000 \
-              -f 0xe48bff56 \
-              -c \
-              -o "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2" \
-              "$BIN_FILE"
-          fi
+      - name: Pull submodules
+        run: cd $HOME/qmk_firmware && git submodule update --init --recursive
 
-          ls -la "$QMK_HOME/artifacts/rp2040zero_6x4_via.uf2"
+      - name: Compile firmware
+        run: |
+          cd ~/qmk_firmware
+          qmk compile -j 1 -kb rp2040zero_6x4_via_qmk -km via
 
-      - name: Upload UF2
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rp2040zero_6x4_via-uf2
-          path: ${{ env.QMK_HOME }}/artifacts/rp2040zero_6x4_via.uf2
+          name: rp2040zero_6x4_via_qmk_via_firmware
+          path: |
+            ~/qmk_firmware/*.uf2
+            ~/qmk_firmware/.build/*.uf2
+            ~/qmk_firmware/*.bin
+            ~/qmk_firmware/.build/*.bin
           if-no-files-found: error
