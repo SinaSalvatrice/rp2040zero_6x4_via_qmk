@@ -15,5 +15,12 @@ Handwired QMK keyboard for RP2040 Zero.
 qmk compile -kb rp2040zero_6x4_via_qmk -km via
 ```
 
+If you compile without `-km via` and flash that firmware, VIA may connect to the USB device but fail with protocol/version errors.
+
 ## Flash
 Enter RP2040 bootloader (BOOTSEL while plugging in, or reset into UF2 mode), then copy the generated `.uf2` to the mounted drive. The RP2040 UF2 flashing flow is the standard QMK method for RP2040 boards.
+
+## VIA troubleshooting
+- Load `keymaps/via/via.json` manually in VIA (Design tab -> Load Draft Definition).
+- Ensure the flashed firmware was built from this repo after enabling VIA.
+- If VIA still shows the old state, unplug/replug the keypad and restart the browser before reconnecting.

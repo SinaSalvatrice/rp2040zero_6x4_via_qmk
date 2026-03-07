@@ -1,2 +1,3 @@
 BACKLIGHT_ENABLE = no
 WS2812_DRIVER = vendor
+VIA_ENABLE = yes
