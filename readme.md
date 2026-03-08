@@ -27,5 +27,6 @@ Enter RP2040 bootloader (BOOTSEL while plugging in, or reset into UF2 mode), the
 
 ## VIA troubleshooting
 - Load `keymaps/via/via.json` manually in VIA (Design tab -> Load Draft Definition).
+- If VIA reports `via.json Object: should NOT have additional properties`, keep the VIA definition minimal. In this repo, removing `"lighting": "qmk_rgblight"` from `keymaps/via/via.json` fixed the error.
 - Ensure the flashed firmware was built from this repo after the latest VIA settings update.
 - If VIA still shows the old state, unplug/replug the keypad and restart the browser before reconnecting.
