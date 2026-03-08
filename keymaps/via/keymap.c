@@ -340,7 +340,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_EDIT] = LAYOUT_6x4(
         KC_NO,               TO(0),                MO(4),                KC_BSPC,
-        KC_NO,               LCTL(KC_V),           KC_NO,                LCTL(KC_A),
+        KC_NO,               KC_NO,           LCTL(KC_V),                LCTL(KC_A),
         LCTL(KC_Z),          S(KC_HOME),           LCTL(KC_R),           LCTL(KC_C),
         S(KC_LEFT),          LCTL(KC_S),           S(KC_RGHT),           KC_NO,
         LCTL(LSFT(KC_LEFT)), S(KC_END),            LCTL(LSFT(KC_RGHT)),  KC_PENT,
