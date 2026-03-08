@@ -21,6 +21,6 @@ If you compile without `-km via` and flash that firmware, VIA may connect to the
 Enter RP2040 bootloader (BOOTSEL while plugging in, or reset into UF2 mode), then copy the generated `.uf2` to the mounted drive. The RP2040 UF2 flashing flow is the standard QMK method for RP2040 boards.
 
 ## VIA troubleshooting
-- Load `keymaps/via/via.json` manually in VIA (Design tab -> Load Draft Definition).
+- If VIA shows “Fetching v3 definition failed”, load the bundled v3 definition from `keymaps/via/via.json` (Design tab -> Load Draft Definition).
 - Ensure the flashed firmware was built from this repo after enabling VIA.
 - If VIA still shows the old state, unplug/replug the keypad and restart the browser before reconnecting.
