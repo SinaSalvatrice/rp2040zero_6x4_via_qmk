@@ -17,6 +17,11 @@ qmk compile -kb rp2040zero_6x4_via_qmk -km via
 
 VIA support is enabled at keyboard level in `rules.mk`, so firmware built from any keymap in this repo stays VIA-compatible.
 
+## Build on GitHub Actions
+- Run the `Build QMK Firmware (rp2040zero_6x4_via_qmk)` workflow.
+- Download artifact `rp2040zero_6x4_via_qmk_via_firmware`.
+- Flash `rp2040zero_6x4_via_qmk_via.uf2` from that artifact.
+
 ## Flash
 Enter RP2040 bootloader (BOOTSEL while plugging in, or reset into UF2 mode), then copy the generated `.uf2` to the mounted drive. The RP2040 UF2 flashing flow is the standard QMK method for RP2040 boards.
 

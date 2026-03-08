@@ -59,13 +59,20 @@ jobs:
           cd ~/qmk_firmware
           qmk compile -j 1 -kb rp2040zero_6x4_via_qmk -km via
 
+      - name: Collect VIA firmware artifact
+        run: |
+          set -e
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          UF2_FILE=$(find "$HOME/qmk_firmware" -type f -name 'rp2040zero_6x4_via_qmk_via.uf2' | head -n 1)
+          if [ -z "$UF2_FILE" ]; then
+            echo "Expected VIA firmware rp2040zero_6x4_via_qmk_via.uf2 was not produced."
+            exit 1
+          fi
+          cp "$UF2_FILE" "$GITHUB_WORKSPACE/artifacts/"
+
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: rp2040zero_6x4_via_qmk_via_firmware
-          path: |
-            ~/qmk_firmware/*.uf2
-            ~/qmk_firmware/.build/*.uf2
-            ~/qmk_firmware/*.bin
-            ~/qmk_firmware/.build/*.bin
+          path: artifacts/rp2040zero_6x4_via_qmk_via.uf2
           if-no-files-found: error
