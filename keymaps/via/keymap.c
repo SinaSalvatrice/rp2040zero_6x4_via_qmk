@@ -340,7 +340,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_EDIT] = LAYOUT_6x4(
         KC_NO,               TO(0),                MO(4),                KC_BSPC,
-        KC_NO,               KC_NO,                KC_NO,                LCTL(KC_A),
+        KC_NO,               LCTL(KC_V),           KC_NO,                LCTL(KC_A),
         LCTL(KC_Z),          S(KC_HOME),           LCTL(KC_R),           LCTL(KC_C),
         S(KC_LEFT),          LCTL(KC_S),           S(KC_RGHT),           KC_NO,
         LCTL(LSFT(KC_LEFT)), S(KC_END),            LCTL(LSFT(KC_RGHT)),  KC_PENT,
@@ -357,12 +357,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_MAKRO] = LAYOUT_6x4(
-        KC_NO,  TO(0),  MO(4),  KC_NO,
-        KC_NO,  KC_NO,  KC_NO,  KC_NO,
-        KC_F14, KC_F15, KC_F16, KC_NO,
-        KC_F17, KC_F18, KC_F19, KC_NO,
-        KC_F20, KC_F21, KC_F22, KC_NO,
-        KC_NO,  KC_NO,  KC_NO,  KC_NO
+        KC_NO,                  TO(0),                  MO(4),                   KC_NO,
+        KC_NO,                  KC_NO,                  KC_NO,                   KC_NO,
+        KC_F14,                 KC_F15,                 KC_F16,                  KC_NO,
+        KC_F17,                 KC_F18,                 KC_F19,                  KC_NO,
+        KC_F20,                 KC_F21,                 KC_F22,                  KC_NO,
+        KC_NO,                  KC_NO,                  KC_NO,                   KC_NO
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
