@@ -176,7 +176,7 @@ static void render_frame(void) {
 
 void keyboard_post_init_user(void) {
 #ifdef ENCODER_BTN_PIN
-    setPinInputHigh(ENCODER_BTN_PIN);
+    gpio_set_pin_input_high(ENCODER_BTN_PIN);
 #endif
     t_frame = timer_read();
     wander_tmr = timer_read();
@@ -203,7 +203,7 @@ void matrix_scan_user(void) {
 
 #ifdef ENCODER_BTN_PIN
     if (timer_elapsed(btn_tmr) >= 10) {
-        bool pressed = (readPin(ENCODER_BTN_PIN) == 0);
+        bool pressed = !gpio_read_pin(ENCODER_BTN_PIN);
         if (pressed && btn_released) {
             btn_tmr = timer_read();
             user_rgb_on = !user_rgb_on;
