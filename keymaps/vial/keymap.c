@@ -330,17 +330,17 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_NUMPAD] = LAYOUT_6x4(
-        KC_NO,   MO(1),   MO(4),   KC_BSPC,
-        KC_NUM,  KC_PAST, KC_PSLS, KC_PMNS,
-        KC_P7,   KC_P8,   KC_P9,   KC_PPLS,
-        KC_P4,   KC_P5,   KC_P6,   KC_NO,
-        KC_P1,   KC_P2,   KC_P3,   KC_PENT,
-        KC_NO,   KC_P0,   KC_PDOT, KC_NO
+        KC_NO,          MO(1),          MO(4),          KC_BSPC,
+        KC_NUM,         KC_PAST,        KC_PSLS,        KC_PMNS,
+        KC_P7,          KC_P8,          KC_P9,          KC_PPLS,
+        KC_P4,          KC_P5,          KC_P6,          KC_NO,
+        KC_P1,          KC_P2,          KC_P3,          KC_PENT,
+        KC_NO,          KC_P0,          KC_PDOT,        KC_NO
     ),
 
     [_EDIT] = LAYOUT_6x4(
         KC_NO,               TO(0),                MO(4),                KC_BSPC,
-        KC_NO,               KC_NO,                KC_NO,                LCTL(KC_A),
+        KC_NO,               KC_NO,           LCTL(KC_V),                LCTL(KC_A),
         LCTL(KC_Z),          S(KC_HOME),           LCTL(KC_R),           LCTL(KC_C),
         S(KC_LEFT),          LCTL(KC_S),           S(KC_RGHT),           KC_NO,
         LCTL(LSFT(KC_LEFT)), S(KC_END),            LCTL(LSFT(KC_RGHT)),  KC_PENT,
@@ -348,29 +348,29 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_NAV] = LAYOUT_6x4(
-        KC_NO,                  MO(0),                MO(4),                KC_NO,
-        KC_NO,                  KC_NO,                KC_NO,                KC_NO,
-        LALT(LCTL(KC_LEFT)),    KC_NO,                LALT(LCTL(KC_RGHT)),  KC_NO,
-        LCTL(LGUI(KC_LEFT)),    KC_NO,                LCTL(LGUI(KC_RGHT)),  KC_NO,
-        KC_NO,                  KC_NO,                KC_NO,                KC_PENT,
-        KC_NO,                  KC_NO,                LCTL(LALT(KC_DEL)),   KC_NO
+        KC_NO,                   TO(0),                MO(4),                    KC_NO,
+        KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
+        KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
+        LALT(LCTL(KC_LEFT)),     KC_NO,                LALT(LCTL(KC_RGHT)),      KC_NO,
+        LCTL(LGUI(KC_LEFT)),     KC_NO,                LCTL(LGUI(KC_RGHT)),      KC_NO,
+        KC_NO,                   KC_NO,                LCTL(LALT(KC_DEL)),       KC_NO
     ),
 
     [_MAKRO] = LAYOUT_6x4(
-        KC_NO,  TO(0),  MO(4),  KC_NO,
-        KC_NO,  KC_NO,  KC_NO,  KC_NO,
-        KC_F14, KC_F15, KC_F16, KC_NO,
-        KC_F17, KC_F18, KC_F19, KC_NO,
-        KC_F20, KC_F21, KC_F22, KC_NO,
-        KC_NO,  KC_NO,  KC_NO,  KC_NO
+        KC_NO,                  TO(0),                  MO(4),                   KC_NO,
+        KC_NO,                  KC_NO,                  KC_NO,                   KC_NO,
+        KC_F14,                 KC_F15,                 KC_F16,                  KC_NO,
+        KC_F17,                 KC_F18,                 KC_F19,                  KC_NO,
+        KC_F20,                 KC_F21,                 KC_F22,                  KC_NO,
+        KC_NO,                  KC_NO,                  KC_NO,                   KC_NO
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
-        KC_NO,          TO(0),          MO(4),          QK_BOOT,
-        RGB_UI_WSPD_UP, RGB_UI_WSPD_DN, RGB_UI_HUI,     RGB_UI_HUD,
-        RGB_UI_VAI,     RGB_UI_VAD,     RGB_UI_WTOG,    RGB_UI_TOG,
-        RGB_UI_SAI,     RGB_UI_SAD,     KC_NO,          KC_NO,
-        TO(1),          TO(2),          TO(3),          KC_NO,
-        KC_NO,          KC_NO,          KC_NO,          KC_NO
+        KC_NO,          TO(0),                  MO(4),              QK_BOOT,
+        RGB_UI_WSPD_UP, RGB_UI_WSPD_DN,         RGB_UI_HUI,         RGB_UI_HUD,
+        RGB_UI_VAI,     RGB_UI_VAD,             RGB_UI_WTOG,        RGB_UI_TOG,
+        RGB_UI_SAI,     RGB_UI_SAD,             KC_NO,              KC_NO,
+        TO(1),          TO(2),                  TO(3),              KC_NO,
+        KC_NO,          KC_NO,                  KC_NO,              KC_NO
     )
 };
