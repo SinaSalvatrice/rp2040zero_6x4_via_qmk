@@ -11,5 +11,5 @@
 #define VIAL_UNLOCK_COMBO_COLS {0, 1}
 
 
-#define RGB_DI_PIN GP13
-#define RGBLED_NUM 10
+#define RGB_DI_PIN GP29
+#define RGBLED_NUM 21
