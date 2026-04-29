@@ -40,17 +40,5 @@
         { "matrix": [5, 3], "x": 3, "y": 5 }
       ]
     }
-  },
-  "menus": [
-    {
-      "label": "Lighting",
-      "content": [
-        {
-          "label": "Enable Lighting",
-          "type": "toggle",
-          "content": "qmk_rgblight_brightness"
-        }
-      ]
-    }
-  ]
+  }
 }

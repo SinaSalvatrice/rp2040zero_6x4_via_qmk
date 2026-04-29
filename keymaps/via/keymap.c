@@ -11,13 +11,8 @@ int readPin(int pin) {
     return 1;
 }
 
-#if defined(RGBLIGHT_LED_COUNT)
-#    define LED_COUNT RGBLIGHT_LED_COUNT
-#elif defined(RGBLED_NUM)
-#    define LED_COUNT RGBLED_NUM
-#else
-#    define LED_COUNT 10
-#endif
+// RGB lighting disabled - using matrix configuration only
+#define LED_COUNT 0
 
 #define STARTUP_MS             0
 #define FRAME_MS              20
