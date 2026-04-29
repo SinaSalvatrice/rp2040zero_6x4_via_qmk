@@ -6,8 +6,8 @@ Handwired QMK keyboard for RP2040 Zero.
 - Rows: GP0, GP1, GP2, GP3, GP4, GP5
 - Cols: GP6, GP7, GP8, GP9
 - Diode direction: ROW2COL
-- Encoder: A=GP10, B=GP11
-- Encoder button: GP12
+- Encoder: A=GP11, B=GP12
+- Encoder button: GP10
 - WS2812 / NeoPixel: GP13, 10 LEDs
 
 ## Build locally

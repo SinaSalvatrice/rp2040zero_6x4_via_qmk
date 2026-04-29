@@ -9,3 +9,7 @@
 #define VIAL_KEYBOARD_UID {0x59, 0xF2, 0x2D, 0x4B, 0x71, 0xA6, 0xC3, 0x9E}
 #define VIAL_UNLOCK_COMBO_ROWS {0, 0}
 #define VIAL_UNLOCK_COMBO_COLS {0, 1}
+
+
+#define RGB_DI_PIN GP13
+#define RGBLED_NUM 10

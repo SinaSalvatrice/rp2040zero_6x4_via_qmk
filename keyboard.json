@@ -28,7 +28,7 @@
     "extrakey": true,
     "mousekey": true,
     "nkro": true,
-    "rgblight": false,
+    "rgblight": true,
     "via": true
   },
   "build": {

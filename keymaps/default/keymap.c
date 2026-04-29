@@ -2,8 +2,13 @@
 #include "lib/lib8tion/lib8tion.h"
 #include "timer.h"
 
-// RGB lighting disabled - using matrix configuration only
-#define LED_COUNT 0
+#if defined(RGBLIGHT_LED_COUNT)
+#    define LED_COUNT RGBLIGHT_LED_COUNT
+#elif defined(RGBLED_NUM)
+#    define LED_COUNT RGBLED_NUM
+#else
+#    define LED_COUNT 10
+#endif
 
 #define STARTUP_MS             0
 #define FRAME_MS              20

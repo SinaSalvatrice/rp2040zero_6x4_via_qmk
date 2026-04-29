@@ -2,15 +2,6 @@
 #include "lib/lib8tion/lib8tion.h"
 #include "timer.h"
 
-void setPinInputHigh(int pin) {
-    // TODO: Add code to set pin input high
-}
-
-int readPin(int pin) {
-    // TODO: Read pin value and return it (0 or 1)
-    return 1;
-}
-
 #if defined(RGBLIGHT_LED_COUNT)
 #    define LED_COUNT RGBLIGHT_LED_COUNT
 #elif defined(RGBLED_NUM)
