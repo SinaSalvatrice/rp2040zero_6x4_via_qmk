@@ -2,7 +2,6 @@
   "name": "RP2040 Zero 6x4 VIA",
   "vendorId": "0x5349",
   "productId": "0x6401",
-  "lighting": "qmk_rgblight",
   "matrix": {
     "rows": 6,
     "cols": 4
