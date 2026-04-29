@@ -3,27 +3,24 @@
 Handwired QMK keyboard for RP2040 Zero.
 
 ## Hardware
+
 - Rows: GP0, GP1, GP2, GP3, GP4, GP5
-- Cols: GP6, GP7, GP8, GP9
+- Cols: GP6, GP7, GP9, GP8
 - Diode direction: ROW2COL
 - Encoder: A=GP11, B=GP12
 - Encoder button: GP10
 - WS2812 / NeoPixel: GP29, 21 LEDs
 
 ## Build locally
+
 ```bash
 qmk compile -kb rp2040zero_6x4_via_qmk -km via
 ```
 
-## Build Vial firmware locally
-```bash
-qmk compile -kb rp2040zero_6x4_via_qmk -km vial
-```
-
 VIA support is enabled at keyboard level in `rules.mk`, so firmware built from any keymap in this repo stays VIA-compatible.
-Vial support is enabled specifically in `keymaps/vial/rules.mk`, so only the `vial` keymap builds with Vial enabled.
 
 ## Build on GitHub Actions
+
 - Run the `Build QMK Firmware (rp2040zero_6x4_via_qmk)` workflow.
 - Download artifact `rp2040zero_6x4_via_qmk_via_firmware`.
 - Flash `rp2040zero_6x4_via_qmk_via.uf2` from that artifact.
@@ -32,14 +29,10 @@ Vial support is enabled specifically in `keymaps/vial/rules.mk`, so only the `vi
 Enter RP2040 bootloader (BOOTSEL while plugging in, or reset into UF2 mode), then copy the generated `.uf2` to the mounted drive. The RP2040 UF2 flashing flow is the standard QMK method for RP2040 boards.
 
 ## VIA troubleshooting
+
 - If VIA shows “Fetching v3 definition failed”, load the bundled v3 definition from `keymaps/via/via.json` (Design tab -> Load Draft Definition).
 - Ensure the flashed firmware was built from this repo after enabling VIA.
 - Load `keymaps/via/via.json` manually in VIA (Design tab -> Load Draft Definition).
-- If VIA reports `via.json Object: should NOT have additional properties`, keep the VIA definition minimal. In this repo, removing `"lighting": "qmk_rgblight"` from `keymaps/via/via.json` fixed the error.
+- If VIA reports `via.json Object: should NOT have additional properties`, verify you are loading the bundled definition from this repo and reconnect the keypad.
 - Ensure the flashed firmware was built from this repo after the latest VIA settings update.
 - If VIA still shows the old state, unplug/replug the keypad and restart the browser before reconnecting.
-
-## Vial setup
-- Flash firmware built with `-km vial`.
-- Open Vial and load `keymaps/vial/vial.json` if auto-detection does not immediately show this board.
-- Use the unlock combo (row 0 col 0 + row 0 col 1; top-left two keys in this matrix) when Vial asks to unlock the keyboard.

@@ -20,16 +20,19 @@
       { "pin_a": "GP11", "pin_b": "GP12", "resolution": 4 }
     ]
   },
+  "ws2812": {
+    "pin": "GP29"
+  },
+  "rgblight": {
+    "led_count": 21
+  },
   "features": {
     "bootmagic": true,
     "command": false,
     "console": true,
     "encoder": true,
     "extrakey": true,
-    "mousekey": true,
-    "nkro": true,
-    "rgblight": true,
-    "via": true
+    "nkro": true
   },
   "build": {
     "firmware_format": "uf2",
