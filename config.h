@@ -12,4 +12,5 @@
 
 
 #define RGB_DI_PIN GP29
+#define WS2812_DI_PIN RGB_DI_PIN
 #define RGBLED_NUM 21

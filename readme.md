@@ -8,7 +8,7 @@ Handwired QMK keyboard for RP2040 Zero.
 - Diode direction: ROW2COL
 - Encoder: A=GP11, B=GP12
 - Encoder button: GP10
-- WS2812 / NeoPixel: GP13, 10 LEDs
+- WS2812 / NeoPixel: GP29, 21 LEDs
 
 ## Build locally
 ```bash
