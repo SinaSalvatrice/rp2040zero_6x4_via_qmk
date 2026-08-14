@@ -21,7 +21,8 @@
     ]
   },
   "ws2812": {
-    "pin": "GP29"
+    "pin": "GP29",
+    "driver": "vendor"
   },
   "rgblight": {
     "led_count": 21
@@ -32,7 +33,8 @@
     "console": true,
     "encoder": true,
     "extrakey": true,
-    "nkro": true
+    "nkro": true,
+    "rgblight": true
   },
   "build": {
     "firmware_format": "uf2",
