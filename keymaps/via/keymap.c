@@ -233,7 +233,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
     if (clockwise) {
         enc_dot_pos = (enc_dot_pos + DOT_STEP_PER_TICK) % LED_COUNT;
         if (last_layer == _INKSCAPE) {
-            tap_code(KC_PLUS);
+            tap_code16(KC_PLUS);
         } else {
             tap_code(MS_WHLU);
         }
