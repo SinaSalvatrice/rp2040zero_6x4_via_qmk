@@ -24,7 +24,7 @@ enum layer_names {
     _NUMPAD,
     _EDIT,
     _NAV,
-    _MAKRO,
+    _INKSCAPE,
     _SETTINGS
 };
 
@@ -65,7 +65,7 @@ static uint8_t hue_for_layer(uint8_t layer) {
         case _NUMPAD:   return 149;
         case _EDIT:     return 64;
         case _NAV:      return 170;
-        case _MAKRO:    return 213;
+        case _INKSCAPE: return 155;
         case _SETTINGS: return 0;
         default:        return 149;
     }
@@ -109,19 +109,7 @@ static void render_frame(void) {
 
     uint16_t now = timer_read();
 
-    if (rgb_mode == 2) {
-        uint8_t base_v;
-        if (base_v_max > base_v_min) {
-            uint8_t span = base_v_max - base_v_min;
-            base_v = dither_scale_sin8(now / 14, span) + base_v_min;
-        } else {
-            base_v = base_v_min;
-        }
-
-        for (uint8_t i = 0; i < LED_COUNT; i++) {
-            set_led_hsv(i, current_hue, current_sat, base_v);
-        }
-    } else if (rgb_mode == 1) {
+    if (rgb_mode == 2 || rgb_mode == 1) {
         uint8_t base_v;
         if (base_v_max > base_v_min) {
             uint8_t span = base_v_max - base_v_min;
@@ -206,13 +194,17 @@ void matrix_scan_user(void) {
         bool pressed = !gpio_read_pin(ENCODER_BTN_PIN);
         if (pressed && btn_released) {
             btn_tmr = timer_read();
-            user_rgb_on = !user_rgb_on;
-            if (!user_rgb_on) {
-                clear_all_leds();
+            if (last_layer == _INKSCAPE) {
+                tap_code(KC_3); // Inkscape: zoom to selection
             } else {
-                ind_active = true;
-                ind_tmr = timer_read();
-                render_frame();
+                user_rgb_on = !user_rgb_on;
+                if (!user_rgb_on) {
+                    clear_all_leds();
+                } else {
+                    ind_active = true;
+                    ind_tmr = timer_read();
+                    render_frame();
+                }
             }
         }
         btn_released = !pressed;
@@ -240,10 +232,18 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
     if (clockwise) {
         enc_dot_pos = (enc_dot_pos + DOT_STEP_PER_TICK) % LED_COUNT;
-        tap_code(MS_WHLU);
+        if (last_layer == _INKSCAPE) {
+            tap_code(KC_PLUS); // Inkscape: zoom in
+        } else {
+            tap_code(MS_WHLU);
+        }
     } else {
         enc_dot_pos = (enc_dot_pos + LED_COUNT - (DOT_STEP_PER_TICK % LED_COUNT)) % LED_COUNT;
-        tap_code(MS_WHLD);
+        if (last_layer == _INKSCAPE) {
+            tap_code(KC_MINS); // Inkscape: zoom out
+        } else {
+            tap_code(MS_WHLD);
+        }
     }
 
     last_turn = timer_read();
@@ -268,63 +268,45 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 render_frame();
             }
             return false;
-
         case RGB_UI_WTOG:
             rgb_mode = (rgb_mode + 1) % 3;
             ind_active = true;
             ind_tmr = timer_read();
             render_frame();
             return false;
-
         case RGB_UI_HUI:
             current_hue += 8;
             render_frame();
             return false;
-
         case RGB_UI_HUD:
             current_hue -= 8;
             render_frame();
             return false;
-
         case RGB_UI_SAI:
             current_sat = (current_sat <= 247) ? current_sat + 8 : 255;
             render_frame();
             return false;
-
         case RGB_UI_SAD:
             current_sat = (current_sat >= 8) ? current_sat - 8 : 0;
             render_frame();
             return false;
-
         case RGB_UI_VAI:
-            if (base_v_max < 100) {
-                base_v_max += 2;
-            }
+            if (base_v_max < 100) base_v_max += 2;
             render_frame();
             return false;
-
         case RGB_UI_VAD:
-            if (base_v_max > 2) {
-                base_v_max -= 2;
-            }
+            if (base_v_max > 2) base_v_max -= 2;
             render_frame();
             return false;
-
         case RGB_UI_WSPD_UP:
-            if (wander_step_ms > 20) {
-                wander_step_ms -= 10;
-            }
+            if (wander_step_ms > 20) wander_step_ms -= 10;
             render_frame();
             return false;
-
         case RGB_UI_WSPD_DN:
-            if (wander_step_ms < 1000) {
-                wander_step_ms += 10;
-            }
+            if (wander_step_ms < 1000) wander_step_ms += 10;
             render_frame();
             return false;
     }
-
     return true;
 }
 
@@ -340,7 +322,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_EDIT] = LAYOUT_6x4(
         KC_NO,               TO(0),                MO(4),                KC_BSPC,
-        KC_NO,               KC_NO,           LCTL(KC_V),                LCTL(KC_A),
+        KC_NO,               KC_NO,                LCTL(KC_V),           LCTL(KC_A),
         LCTL(KC_Z),          S(KC_HOME),           LCTL(KC_R),           LCTL(KC_C),
         S(KC_LEFT),          LCTL(KC_S),           S(KC_RGHT),           KC_NO,
         LCTL(LSFT(KC_LEFT)), S(KC_END),            LCTL(LSFT(KC_RGHT)),  KC_PENT,
@@ -356,13 +338,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,                   KC_NO,                LCTL(LALT(KC_DEL)),       KC_NO
     ),
 
-    [_MAKRO] = LAYOUT_6x4(
-        KC_NO,                  TO(0),                  MO(4),                   KC_NO,
-        KC_NO,                  KC_NO,                  KC_NO,                   KC_NO,
-        KC_F14,                 KC_F15,                 KC_F16,                  KC_NO,
-        KC_F17,                 KC_F18,                 KC_F19,                  KC_NO,
-        KC_F20,                 KC_F21,                 KC_F22,                  KC_NO,
-        KC_NO,                  KC_NO,                  KC_NO,                   KC_NO
+    // Inkscape control deck. Spatial groups are intentional: tools, objects,
+    // path operations, stacking, dialogs/export, and view/save/undo.
+    [_INKSCAPE] = LAYOUT_6x4(
+        KC_S,             KC_N,                MO(4),               TO(0),
+        LCTL(KC_D),       LCTL(KC_G),          LCTL(LSFT(KC_G)),    LCTL(LSFT(KC_C)),
+        LCTL(KC_PPLS),    LCTL(KC_PMNS),       LCTL(KC_PAST),       LCTL(LSFT(KC_K)),
+        LCTL(KC_K),       LCTL(LSFT(KC_K)),    KC_PGUP,             KC_PGDN,
+        LCTL(LSFT(KC_F)), LCTL(LSFT(KC_A)),    LCTL(LSFT(KC_L)),    LCTL(LSFT(KC_E)),
+        KC_3,             KC_4,                LCTL(KC_S),          LCTL(KC_Z)
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
