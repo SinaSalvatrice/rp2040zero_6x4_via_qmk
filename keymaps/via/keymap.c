@@ -166,6 +166,7 @@ void keyboard_post_init_user(void) {
 #ifdef ENCODER_BTN_PIN
     gpio_set_pin_input_high(ENCODER_BTN_PIN);
 #endif
+    rgblight_enable_noeeprom();
     t_frame = timer_read();
     wander_tmr = timer_read();
 
@@ -174,8 +175,12 @@ void keyboard_post_init_user(void) {
     current_hue = hue_for_layer(layer);
     ind_active = true;
     ind_tmr = timer_read();
-    rgb_mode = 0;
+    rgb_mode = 1;
     user_rgb_on = true;
+
+    // Strong, immediate startup/layer indicator so we can verify RGB is alive.
+    clear_all_leds();
+    set_led_hsv(indicator_led_for_layer[(layer < 5) ? layer : 0], current_hue, current_sat, IND_V);
     render_frame();
 }
 
