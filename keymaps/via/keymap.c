@@ -344,12 +344,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_INKSCAPE] = LAYOUT_6x4(
-        KC_S,             KC_N,                MO(4),               TO(0),
-        LCTL(KC_D),       LCTL(KC_G),          LCTL(LSFT(KC_G)),    LCTL(LSFT(KC_C)),
-        LCTL(KC_PPLS),    LCTL(KC_PMNS),       LCTL(KC_PAST),       LCTL(LSFT(KC_K)),
-        LCTL(KC_K),       LCTL(LSFT(KC_K)),    KC_PGUP,             KC_PGDN,
-        LCTL(LSFT(KC_F)), LCTL(LSFT(KC_A)),    LCTL(LSFT(KC_L)),    LCTL(LSFT(KC_E)),
-        KC_3,             KC_4,                LCTL(KC_S),          LCTL(KC_Z)
+         KC_NO,                   TO(0),                MO(4),                    LCTL(KC_Z),
+         KC_LCTL,                 KC_LSFT,              KC_NO,                    KC_MS_BTN1,
+         KC_LEFT,                 KC_UP,                KC_RIGHT,                 LCTL(KC_K),
+         LCTL(KC_S),              LCTL(KC_C),           LCTL(KC_V),               LCTL(KC_K),
+         KC_S,                    KC_DOWN,              KC_N,                     LCTL(KC_Y),
+         KC_NO,                   KC_NO,                KC_B,                     LCTL(KC_Y),
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
