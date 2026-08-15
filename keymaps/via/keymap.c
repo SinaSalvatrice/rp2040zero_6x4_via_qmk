@@ -50,10 +50,6 @@ enum via_rgb_ui_value {
     id_rgb_enable
 };
 
-enum via_custom_channel_id {
-    id_custom_channel = 0
-};
-
 typedef struct {
     uint8_t  layer_hue[5];
     uint8_t  layer_sat[5];
