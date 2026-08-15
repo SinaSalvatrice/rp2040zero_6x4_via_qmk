@@ -346,8 +346,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_INKSCAPE] = LAYOUT_6x4(
          KC_NO,                   TO(0),                MO(4),                    LCTL(KC_Z),
          KC_LCTL,                 KC_LSFT,              KC_NO,                    MS_BTN1,
-         KC_LEFT,                 KC_UP,                KC_RIGHT,                 LCTL(KC_K),
          LCTL(KC_S),              LCTL(KC_C),           LCTL(KC_V),               LCTL(KC_K),
+         KC_LEFT,                 KC_UP,                KC_RIGHT,                 LCTL(KC_K),
          KC_S,                    KC_DOWN,              KC_N,                     LCTL(KC_Y),
          KC_NO,                   KC_NO,                KC_B,                     LCTL(KC_Y)
     ),
