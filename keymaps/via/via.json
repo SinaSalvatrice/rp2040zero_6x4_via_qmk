@@ -3,74 +3,24 @@
   "vendorId": "0x5349",
   "productId": "0x6401",
   "firmwareVersion": 1,
+  "keycodes": ["qmk_lighting"],
   "matrix": {
     "rows": 6,
     "cols": 4
   },
   "menus": [
+    "qmk_rgb_matrix",
     {
-      "label": "Lighting",
+      "label": "Layer Colors",
       "content": [
         {
           "label": "Layer Colors",
           "content": [
-            {
-              "label": "NUMPAD",
-              "type": "color",
-              "content": ["id_layer_color[0]", 0, 1, 0]
-            },
-            {
-              "label": "EDIT",
-              "type": "color",
-              "content": ["id_layer_color[1]", 0, 1, 1]
-            },
-            {
-              "label": "NAV",
-              "type": "color",
-              "content": ["id_layer_color[2]", 0, 1, 2]
-            },
-            {
-              "label": "INKSCAPE",
-              "type": "color",
-              "content": ["id_layer_color[3]", 0, 1, 3]
-            },
-            {
-              "label": "SETTINGS",
-              "type": "color",
-              "content": ["id_layer_color[4]", 0, 1, 4]
-            }
-          ]
-        },
-        {
-          "label": "Animation",
-          "content": [
-            {
-              "label": "Lighting Enabled",
-              "type": "toggle",
-              "content": ["id_rgb_enable", 0, 5]
-            },
-            {
-              "label": "Animation Mode",
-              "type": "dropdown",
-              "options": [
-                ["Wander only", 0],
-                ["Breathing + Wander", 1],
-                ["Breathing only", 2]
-              ],
-              "content": ["id_animation_mode", 0, 3]
-            },
-            {
-              "label": "Wander Step (ms)",
-              "type": "range",
-              "options": [20, 1000],
-              "content": ["id_animation_speed", 0, 4]
-            },
-            {
-              "label": "Base Brightness",
-              "type": "range",
-              "options": [0, 100],
-              "content": ["id_base_brightness", 0, 2]
-            }
+            { "label": "NUMPAD", "type": "color", "content": ["id_layer_color[0]", 0, 1, 0] },
+            { "label": "EDIT", "type": "color", "content": ["id_layer_color[1]", 0, 1, 1] },
+            { "label": "NAV", "type": "color", "content": ["id_layer_color[2]", 0, 1, 2] },
+            { "label": "INKSCAPE", "type": "color", "content": ["id_layer_color[3]", 0, 1, 3] },
+            { "label": "SETTINGS", "type": "color", "content": ["id_layer_color[4]", 0, 1, 4] }
           ]
         }
       ]
