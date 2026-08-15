@@ -2,15 +2,14 @@
 
 #define ENCODER_BTN_PIN GP10
 
-// Explicit WS2812 / RGBLight configuration.
-#define WS2812_DI_PIN GP29
-#define RGBLIGHT_LED_COUNT 21
-#define RGBLIGHT_LIMIT_VAL 120
-#define RGBLIGHT_DEFAULT_HUE 149
-#define RGBLIGHT_DEFAULT_SAT 255
-#define RGBLIGHT_DEFAULT_VAL 40
+// RGB Matrix defaults. WS2812 pin and LED layout live in keyboard.json.
+#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120
+#define RGB_MATRIX_STARTUP_HUE 149
+#define RGB_MATRIX_STARTUP_SAT 255
+#define RGB_MATRIX_STARTUP_VAL 40
+#define RGB_MATRIX_STARTUP_SPD 128
 
-// VIA custom lighting UI + persistent settings.
+// VIA custom layer-color UI + persistent settings.
 #define VIA_FIRMWARE_VERSION 1
 #define EECONFIG_USER_DATA_SIZE 16
 #define EECONFIG_USER_DATA_VERSION 1
