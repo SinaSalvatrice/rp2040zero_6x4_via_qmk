@@ -293,8 +293,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_INKSCAPE] = LAYOUT_6x4(
         KC_NO,                   TO(0),                MO(4),                    LCTL(KC_Z),
         KC_LCTL,                 KC_LSFT,              KC_NO,                    MS_BTN1,
-        LCTL(KC_S),              LCTL(KC_C),           LCTL(KC_V),               LCTL(KC_K),
-        KC_LEFT,                 KC_UP,                KC_RIGHT,                 LCTL(KC_K),
+        LCTL(KC_S),              KC_UP,                LCTL(KC_V),               LCTL(KC_K),
+        KC_LEFT,                 LCTL(KC_C),           KC_RIGHT,                 LCTL(KC_K),
         KC_S,                    KC_DOWN,              KC_N,                     LCTL(KC_Y),
         KC_NO,                   KC_NO,                KC_B,                     LCTL(KC_Y)
     ),
@@ -303,8 +303,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,          TO(0),      MO(4),      RM_PREV,
         RM_SPDU,        RM_SPDD,    RM_HUEU,    RM_HUED,
         RM_VALU,        RM_VALD,    RM_NEXT,    RM_TOGG,
-        RM_SATU,        RM_SATD,    KC_NO,      KC_NO,
-        TO(1),          TO(2),      TO(3),      KC_NO,
+        RM_SATU,        RM_SATD,    KC_NO,      TO(0),
+        TO(1),          TO(2),      TO(3),      TO(0),
         KC_NO,          KC_NO,      KC_NO,      SAFE_BOOT
     )
 };
