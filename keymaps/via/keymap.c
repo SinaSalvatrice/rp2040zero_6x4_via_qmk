@@ -95,7 +95,7 @@ static void apply_layer_profile(uint8_t layer) {
 
 static void handle_encoder_button_tap(void) {
     if (last_layer == _INKSCAPE) {
-        tap_code(KC_3);
+        tap_code(KC_Q);
     } else {
         rgb_matrix_toggle_noeeprom();
     }
@@ -149,13 +149,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 bool encoder_update_user(uint8_t index, bool clockwise) {
     (void)index;
 
-    if (last_layer == _INKSCAPE) {
-        if (clockwise) {
-            tap_code16(KC_PLUS);
-        } else {
-            tap_code(KC_MINS);
-        }
-    } else if (clockwise) {
+    if (clockwise) {
         tap_code(MS_WHLU);
     } else {
         tap_code(MS_WHLD);
