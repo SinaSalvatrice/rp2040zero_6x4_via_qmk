@@ -11,16 +11,106 @@
   "menus": [
     "qmk_rgb_matrix",
     {
-      "label": "Layer Colors",
+      "label": "Layer Matrix",
       "content": [
         {
-          "label": "Layer Colors",
+          "label": "NUMPAD",
           "content": [
-            { "label": "NUMPAD", "type": "color", "content": ["id_layer_color[0]", 0, 1, 0] },
-            { "label": "EDIT", "type": "color", "content": ["id_layer_color[1]", 0, 1, 1] },
-            { "label": "NAV", "type": "color", "content": ["id_layer_color[2]", 0, 1, 2] },
-            { "label": "INKSCAPE", "type": "color", "content": ["id_layer_color[3]", 0, 1, 3] },
-            { "label": "SETTINGS", "type": "color", "content": ["id_layer_color[4]", 0, 1, 4] }
+            { "label": "Color", "type": "color", "content": ["id_layer_color[0]", 0, 1, 0] },
+            {
+              "label": "Effect",
+              "type": "dropdown",
+              "content": ["id_layer_effect[0]", 0, 2, 0],
+              "options": [
+                "Solid Color",
+                "Breathing",
+                "Cycle Left/Right",
+                "Cycle Up/Down",
+                "Rainbow Chevron",
+                "Splash",
+                "Raindrops"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "EDIT",
+          "content": [
+            { "label": "Color", "type": "color", "content": ["id_layer_color[1]", 0, 1, 1] },
+            {
+              "label": "Effect",
+              "type": "dropdown",
+              "content": ["id_layer_effect[1]", 0, 2, 1],
+              "options": [
+                "Solid Color",
+                "Breathing",
+                "Cycle Left/Right",
+                "Cycle Up/Down",
+                "Rainbow Chevron",
+                "Splash",
+                "Raindrops"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "NAV",
+          "content": [
+            { "label": "Color", "type": "color", "content": ["id_layer_color[2]", 0, 1, 2] },
+            {
+              "label": "Effect",
+              "type": "dropdown",
+              "content": ["id_layer_effect[2]", 0, 2, 2],
+              "options": [
+                "Solid Color",
+                "Breathing",
+                "Cycle Left/Right",
+                "Cycle Up/Down",
+                "Rainbow Chevron",
+                "Splash",
+                "Raindrops"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "INKSCAPE",
+          "content": [
+            { "label": "Color", "type": "color", "content": ["id_layer_color[3]", 0, 1, 3] },
+            {
+              "label": "Effect",
+              "type": "dropdown",
+              "content": ["id_layer_effect[3]", 0, 2, 3],
+              "options": [
+                "Solid Color",
+                "Breathing",
+                "Cycle Left/Right",
+                "Cycle Up/Down",
+                "Rainbow Chevron",
+                "Splash",
+                "Raindrops"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "SETTINGS",
+          "content": [
+            { "label": "Color", "type": "color", "content": ["id_layer_color[4]", 0, 1, 4] },
+            {
+              "label": "Effect",
+              "type": "dropdown",
+              "content": ["id_layer_effect[4]", 0, 2, 4],
+              "options": [
+                "Solid Color",
+                "Breathing",
+                "Cycle Left/Right",
+                "Cycle Up/Down",
+                "Rainbow Chevron",
+                "Splash",
+                "Raindrops"
+              ]
+            }
           ]
         }
       ]

@@ -12,7 +12,7 @@
 // VIA custom layer-color UI + persistent settings.
 #define VIA_FIRMWARE_VERSION 1
 #define EECONFIG_USER_DATA_SIZE 16
-#define EECONFIG_USER_DATA_VERSION 1
+#define EECONFIG_USER_DATA_VERSION 2
 
 #define USB_SUSPEND_WAKEUP_DELAY 0
 #define DEBOUNCE 5
