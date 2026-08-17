@@ -4,7 +4,8 @@
 #include "via.h"
 
 #define LAYER_COUNT 5
-#define LAYER_EFFECT_COUNT 7
+#define LAYER_EFFECT_COUNT 4
+#define SPLASH_SPEED 196
 
 enum layer_names {
     _NUMPAD,
@@ -32,17 +33,14 @@ typedef struct {
 static const uint8_t layer_effect_modes[LAYER_EFFECT_COUNT] = {
     RGB_MATRIX_SOLID_COLOR,
     RGB_MATRIX_BREATHING,
-    RGB_MATRIX_CYCLE_LEFT_RIGHT,
-    RGB_MATRIX_CYCLE_UP_DOWN,
-    RGB_MATRIX_RAINBOW_MOVING_CHEVRON,
-    RGB_MATRIX_SPLASH,
-    RGB_MATRIX_RAINDROPS
+    RGB_MATRIX_SOLID_REACTIVE_SIMPLE,
+    RGB_MATRIX_SPLASH
 };
 
 static rgb_ui_config_t rgb_cfg = {
     .layer_hue    = {149, 64, 170, 155, 0},
     .layer_sat    = {255, 255, 255, 255, 255},
-    .layer_effect = {0, 1, 2, 4, 6}
+    .layer_effect = {0, 1, 2, 3, 0}
 };
 
 static uint8_t last_layer = _NUMPAD;
@@ -90,6 +88,9 @@ static void apply_layer_profile(uint8_t layer) {
 
     rgb_matrix_mode_noeeprom(layer_effect_modes[effect]);
     rgb_matrix_sethsv_noeeprom(rgb_cfg.layer_hue[safe_layer], rgb_cfg.layer_sat[safe_layer], hsv.v);
+    if (layer_effect_modes[effect] == RGB_MATRIX_SPLASH) {
+        rgb_matrix_set_speed_noeeprom(SPLASH_SPEED);
+    }
 }
 
 static void handle_encoder_button_tap(void) {
@@ -272,7 +273,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_EDIT] = LAYOUT_6x4(
-        KC_NO,               TO(0),                MO(4),                KC_BSPC,
+        TO(0),               KC_NO,                MO(4),                KC_BSPC,
         KC_NO,               KC_NO,                LCTL(KC_V),           LCTL(KC_A),
         LCTL(KC_Z),          S(KC_HOME),           LCTL(KC_R),           LCTL(KC_C),
         S(KC_LEFT),          LCTL(KC_S),           S(KC_RGHT),           KC_NO,
@@ -281,7 +282,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_NAV] = LAYOUT_6x4(
-        KC_NO,                   TO(0),                MO(4),                    KC_NO,
+        TO(0),                   KC_NO,                MO(4),                    KC_NO,
         KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
         KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
         LALT(LCTL(KC_LEFT)),     KC_NO,                LALT(LCTL(KC_RGHT)),      KC_NO,
@@ -290,7 +291,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_INKSCAPE] = LAYOUT_6x4(
-        KC_NO,                   TO(0),                MO(4),                    LCTL(KC_Z),
+        TO(0),                   KC_NO,                MO(4),                    LCTL(KC_Z),
         KC_LCTL,                 KC_LSFT,              KC_NO,                    MS_BTN1,
         LCTL(KC_S),              LCTL(KC_C),           LCTL(KC_V),               LCTL(KC_K),
         KC_LEFT,                 KC_UP,                KC_RIGHT,                 LCTL(KC_K),
@@ -299,7 +300,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
-        KC_NO,          TO(0),      MO(4),      RM_PREV,
+        TO(0),          KC_NO,      MO(4),      RM_PREV,
         RM_SPDU,        RM_SPDD,    RM_HUEU,    RM_HUED,
         RM_VALU,        RM_VALD,    RM_NEXT,    RM_TOGG,
         RM_SATU,        RM_SATD,    KC_NO,      KC_NO,

@@ -40,11 +40,6 @@
     "animations": {
       "solid_color": true,
       "breathing": true,
-      "cycle_all": true,
-      "cycle_left_right": true,
-      "cycle_up_down": true,
-      "rainbow_moving_chevron": true,
-      "raindrops": true,
       "solid_reactive_simple": true,
       "splash": true
     },
