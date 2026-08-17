@@ -263,7 +263,7 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_NUMPAD] = LAYOUT_6x4(
-        KC_NO,          MO(1),          MO(4),          KC_BSPC,
+        KC_NO,          TO(0),          MO(4),          KC_BSPC,
         KC_NUM,         KC_PAST,        KC_PSLS,        KC_PMNS,
         KC_P7,          KC_P8,          KC_P9,          KC_PPLS,
         KC_P4,          KC_P5,          KC_P6,          KC_NO,
