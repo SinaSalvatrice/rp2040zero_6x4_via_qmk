@@ -264,7 +264,7 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_NUMPAD] = LAYOUT_6x4(
-        KC_NO,          TO(0),          MO(4),          KC_BSPC,
+        KC_NO,          KC_NO,          MO(4),          KC_BSPC,
         KC_NUM,         KC_PAST,        KC_PSLS,        KC_PMNS,
         KC_P7,          KC_P8,          KC_P9,          KC_PPLS,
         KC_P4,          KC_P5,          KC_P6,          KC_NO,
@@ -273,7 +273,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_EDIT] = LAYOUT_6x4(
-        TO(0),               KC_NO,                MO(4),                KC_BSPC,
+        KC_NO,               TO(0),                MO(4),                KC_BSPC,
         KC_NO,               KC_NO,                LCTL(KC_V),           LCTL(KC_A),
         LCTL(KC_Z),          S(KC_HOME),           LCTL(KC_R),           LCTL(KC_C),
         S(KC_LEFT),          LCTL(KC_S),           S(KC_RGHT),           KC_NO,
@@ -282,7 +282,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_NAV] = LAYOUT_6x4(
-        TO(0),                   KC_NO,                MO(4),                    KC_NO,
+        KC_NO,                   TO(0),                MO(4),                    KC_NO,
         KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
         KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
         LALT(LCTL(KC_LEFT)),     KC_NO,                LALT(LCTL(KC_RGHT)),      KC_NO,
@@ -291,7 +291,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_INKSCAPE] = LAYOUT_6x4(
-        TO(0),                   KC_NO,                MO(4),                    LCTL(KC_Z),
+        KC_NO,                   TO(0),                MO(4),                    LCTL(KC_Z),
         KC_LCTL,                 KC_LSFT,              KC_NO,                    MS_BTN1,
         LCTL(KC_S),              LCTL(KC_C),           LCTL(KC_V),               LCTL(KC_K),
         KC_LEFT,                 KC_UP,                KC_RIGHT,                 LCTL(KC_K),
@@ -300,7 +300,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
-        TO(0),          KC_NO,      MO(4),      RM_PREV,
+        KC_NO,          TO(0),      MO(4),      RM_PREV,
         RM_SPDU,        RM_SPDD,    RM_HUEU,    RM_HUED,
         RM_VALU,        RM_VALD,    RM_NEXT,    RM_TOGG,
         RM_SATU,        RM_SATD,    KC_NO,      KC_NO,
