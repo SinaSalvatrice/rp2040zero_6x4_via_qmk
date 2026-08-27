@@ -4,7 +4,7 @@
 #include "via.h"
 
 #define LAYER_COUNT 5
-#define LAYER_EFFECT_COUNT 9
+#define LAYER_EFFECT_COUNT 23
 
 enum layer_names {
     _CREATIVE,
@@ -29,13 +29,27 @@ enum via_rgb_ui_value {
 enum layer_effects {
     LFX_SOLID = 0,
     LFX_BREATHING,
-    LFX_REACTIVE,
+    LFX_GRADIENT_LEFT_RIGHT,
+    LFX_CYCLE_ALL,
+    LFX_RAINBOW_LEFT_RIGHT,
+    LFX_RAINBOW_UP_DOWN,
+    LFX_RAINBOW_CHEVRON,
+    LFX_RAINBOW_OUT_IN,
+    LFX_RAINBOW_OUT_IN_DUAL,
+    LFX_RAINBOW_PINWHEEL,
+    LFX_RAINBOW_SPIRAL,
+    LFX_DUAL_BEACON,
+    LFX_RAINBOW_BEACON,
+    LFX_JELLYBEAN_RAINDROPS,
+    LFX_HUE_PENDULUM,
+    LFX_PIXEL_RAIN,
+    LFX_REACTIVE_SIMPLE,
+    LFX_REACTIVE_WIDE,
     LFX_SPLASH,
+    LFX_MULTISPLASH,
     LFX_DUAL_GRADIENT,
     LFX_DUAL_BREATH,
-    LFX_DUAL_WAVE,
-    LFX_RAINBOW_WAVE,
-    LFX_RAINBOW_PINWHEEL
+    LFX_DUAL_WAVE
 };
 
 typedef struct {
@@ -52,7 +66,7 @@ static rgb_ui_config_t rgb_cfg = {
     .layer_sat_a  = {255, 255, 255, 255, 255},
     .layer_hue_b  = {190, 170, 210, 96, 160},
     .layer_sat_b  = {255, 255, 255, 255, 255},
-    .layer_effect = {LFX_DUAL_GRADIENT, LFX_BREATHING, LFX_REACTIVE, LFX_DUAL_WAVE, LFX_SOLID},
+    .layer_effect = {LFX_DUAL_GRADIENT, LFX_BREATHING, LFX_REACTIVE_SIMPLE, LFX_DUAL_WAVE, LFX_SOLID},
     .layer_speed  = {32, 24, 64, 40, 32}
 };
 
@@ -132,14 +146,42 @@ static uint8_t qmk_mode_for_effect(uint8_t effect) {
     switch (effect) {
         case LFX_BREATHING:
             return RGB_MATRIX_BREATHING;
-        case LFX_REACTIVE:
-            return RGB_MATRIX_SOLID_REACTIVE_SIMPLE;
-        case LFX_SPLASH:
-            return RGB_MATRIX_SPLASH;
-        case LFX_RAINBOW_WAVE:
+        case LFX_GRADIENT_LEFT_RIGHT:
+            return RGB_MATRIX_GRADIENT_LEFT_RIGHT;
+        case LFX_CYCLE_ALL:
+            return RGB_MATRIX_CYCLE_ALL;
+        case LFX_RAINBOW_LEFT_RIGHT:
             return RGB_MATRIX_CYCLE_LEFT_RIGHT;
+        case LFX_RAINBOW_UP_DOWN:
+            return RGB_MATRIX_CYCLE_UP_DOWN;
+        case LFX_RAINBOW_CHEVRON:
+            return RGB_MATRIX_RAINBOW_MOVING_CHEVRON;
+        case LFX_RAINBOW_OUT_IN:
+            return RGB_MATRIX_CYCLE_OUT_IN;
+        case LFX_RAINBOW_OUT_IN_DUAL:
+            return RGB_MATRIX_CYCLE_OUT_IN_DUAL;
         case LFX_RAINBOW_PINWHEEL:
             return RGB_MATRIX_CYCLE_PINWHEEL;
+        case LFX_RAINBOW_SPIRAL:
+            return RGB_MATRIX_CYCLE_SPIRAL;
+        case LFX_DUAL_BEACON:
+            return RGB_MATRIX_DUAL_BEACON;
+        case LFX_RAINBOW_BEACON:
+            return RGB_MATRIX_RAINBOW_BEACON;
+        case LFX_JELLYBEAN_RAINDROPS:
+            return RGB_MATRIX_JELLYBEAN_RAINDROPS;
+        case LFX_HUE_PENDULUM:
+            return RGB_MATRIX_HUE_PENDULUM;
+        case LFX_PIXEL_RAIN:
+            return RGB_MATRIX_PIXEL_RAIN;
+        case LFX_REACTIVE_SIMPLE:
+            return RGB_MATRIX_SOLID_REACTIVE_SIMPLE;
+        case LFX_REACTIVE_WIDE:
+            return RGB_MATRIX_SOLID_REACTIVE_WIDE;
+        case LFX_SPLASH:
+            return RGB_MATRIX_SPLASH;
+        case LFX_MULTISPLASH:
+            return RGB_MATRIX_MULTISPLASH;
         case LFX_SOLID:
         default:
             return RGB_MATRIX_SOLID_COLOR;
@@ -178,8 +220,6 @@ void keyboard_post_init_user(void) {
 }
 
 void matrix_scan_user(void) {
-    // Lighting is not a persistent on/off feature on this pad.
-    // If QMK or an old EEPROM state says "off", immediately return to on.
     if (!rgb_matrix_is_enabled()) {
         rgb_matrix_enable_noeeprom();
     }
@@ -237,7 +277,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     switch (keycode) {
         case RM_TOGG:
-            // This pad has no persistent lighting-off state.
             return false;
         case SAFE_EEPROM_RESET:
             if (encoder_button_is_pressed()) {
