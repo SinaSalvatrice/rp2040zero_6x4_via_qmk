@@ -4,7 +4,8 @@
 #include "via.h"
 
 #define LAYER_COUNT 5
-#define LAYER_EFFECT_COUNT 10
+#define LAYER_EFFECT_COUNT 9
+#define BOOT_MIN_BRIGHTNESS 40
 
 enum layer_names {
     _CREATIVE,
@@ -33,9 +34,8 @@ enum layer_effects {
     LFX_DUAL_GRADIENT,
     LFX_DUAL_BREATH,
     LFX_DUAL_WAVE,
-    LFX_DUAL_REACTIVE,
-    LFX_HUE_PENDULUM,
-    LFX_STARLIGHT_SMOOTH
+    LFX_RAINBOW_WAVE,
+    LFX_RAINBOW_PINWHEEL
 };
 
 typedef struct {
@@ -52,17 +52,14 @@ static rgb_ui_config_t rgb_cfg = {
     .layer_sat_a  = {255, 255, 255, 255, 255},
     .layer_hue_b  = {190, 170, 210, 96, 160},
     .layer_sat_b  = {255, 255, 255, 255, 255},
-    .layer_effect = {LFX_SOLID, LFX_BREATHING, LFX_REACTIVE, LFX_SPLASH, LFX_SOLID},
-    .layer_speed  = {32, 24, 64, 72, 32}
+    .layer_effect = {LFX_DUAL_GRADIENT, LFX_BREATHING, LFX_REACTIVE, LFX_DUAL_WAVE, LFX_SOLID},
+    .layer_speed  = {32, 24, 64, 40, 32}
 };
 
 static uint8_t last_layer = _CREATIVE;
 static bool encoder_btn_pressed = false;
 static bool encoder_btn_consumed = false;
 static uint16_t encoder_btn_tmr = 0;
-static bool reactive_led_valid = false;
-static uint8_t reactive_led = 0;
-static uint32_t reactive_tmr = 0;
 
 static uint8_t clamp_layer(uint8_t layer) {
     return layer < LAYER_COUNT ? layer : _CREATIVE;
@@ -73,7 +70,7 @@ static uint8_t clamp_effect(uint8_t effect) {
 }
 
 static bool is_dual_effect(uint8_t effect) {
-    return effect >= LFX_DUAL_GRADIENT && effect <= LFX_DUAL_REACTIVE;
+    return effect >= LFX_DUAL_GRADIENT && effect <= LFX_DUAL_WAVE;
 }
 
 static bool encoder_button_is_pressed(void) {
@@ -114,10 +111,6 @@ static uint32_t animation_cycle_ms(uint8_t speed) {
     return 14000U - ((uint32_t)speed * 44U);
 }
 
-static uint32_t reactive_decay_ms(uint8_t speed) {
-    return 2200U - ((uint32_t)speed * 5U);
-}
-
 static void rgb_ui_save(void) {
     eeconfig_update_user_datablock(&rgb_cfg, 0, sizeof(rgb_cfg));
 }
@@ -143,10 +136,10 @@ static uint8_t qmk_mode_for_effect(uint8_t effect) {
             return RGB_MATRIX_SOLID_REACTIVE_SIMPLE;
         case LFX_SPLASH:
             return RGB_MATRIX_SPLASH;
-        case LFX_HUE_PENDULUM:
-            return RGB_MATRIX_HUE_PENDULUM;
-        case LFX_STARLIGHT_SMOOTH:
-            return RGB_MATRIX_STARLIGHT_SMOOTH;
+        case LFX_RAINBOW_WAVE:
+            return RGB_MATRIX_CYCLE_LEFT_RIGHT;
+        case LFX_RAINBOW_PINWHEEL:
+            return RGB_MATRIX_CYCLE_PINWHEEL;
         case LFX_SOLID:
         default:
             return RGB_MATRIX_SOLID_COLOR;
@@ -182,7 +175,15 @@ void keyboard_post_init_user(void) {
 #endif
 
     rgb_ui_load();
+
+    // Always come up visibly lit when the pad receives power, regardless of
+    // a previously stored global RGB on/off state or zero brightness.
     rgb_matrix_enable_noeeprom();
+    hsv_t boot_hsv = rgb_matrix_get_hsv();
+    if (boot_hsv.v == 0) {
+        rgb_matrix_sethsv_noeeprom(boot_hsv.h, boot_hsv.s, BOOT_MIN_BRIGHTNESS);
+    }
+
     last_layer = clamp_layer(get_highest_layer(layer_state | default_layer_state));
     apply_layer_profile(last_layer);
 }
@@ -234,26 +235,8 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 }
 #endif
 
-static void remember_reactive_key(keyrecord_t *record) {
-    uint8_t row = record->event.key.row;
-    uint8_t col = record->event.key.col;
-
-    if (row >= MATRIX_ROWS || col >= MATRIX_COLS) {
-        return;
-    }
-
-    uint8_t led = g_led_config.matrix_co[row][col];
-    if (led != NO_LED && led < RGB_MATRIX_LED_COUNT) {
-        reactive_led = led;
-        reactive_led_valid = true;
-        reactive_tmr = timer_read32();
-    }
-}
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (record->event.pressed) {
-        remember_reactive_key(record);
-    } else {
+    if (!record->event.pressed) {
         return true;
     }
 
@@ -299,28 +282,6 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             case LFX_DUAL_WAVE: {
                 uint8_t x_phase = (uint8_t)(((uint16_t)g_led_config.point[i].x * 255U) / 224U);
                 amount = triangle8((uint8_t)(phase + x_phase));
-                break;
-            }
-
-            case LFX_DUAL_REACTIVE: {
-                uint32_t decay_ms = reactive_decay_ms(speed);
-                uint32_t elapsed = timer_elapsed32(reactive_tmr);
-
-                if (!reactive_led_valid || elapsed >= decay_ms) {
-                    amount = 0;
-                    break;
-                }
-
-                uint8_t strength = (uint8_t)(255U - ((elapsed * 255U) / decay_ms));
-                uint16_t dx = g_led_config.point[i].x > g_led_config.point[reactive_led].x
-                                  ? g_led_config.point[i].x - g_led_config.point[reactive_led].x
-                                  : g_led_config.point[reactive_led].x - g_led_config.point[i].x;
-                uint16_t dy = g_led_config.point[i].y > g_led_config.point[reactive_led].y
-                                  ? g_led_config.point[i].y - g_led_config.point[reactive_led].y
-                                  : g_led_config.point[reactive_led].y - g_led_config.point[i].y;
-                uint16_t distance = dx + (dy * 3U);
-                uint8_t falloff = distance >= 96U ? 0 : (uint8_t)(255U - ((distance * 255U) / 96U));
-                amount = (uint8_t)(((uint16_t)strength * falloff) / 255U);
                 break;
             }
 
