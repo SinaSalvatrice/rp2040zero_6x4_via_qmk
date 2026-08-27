@@ -2,13 +2,14 @@
   "name": "RP2040 Zero 6x4 VIA",
   "vendorId": "0x5349",
   "productId": "0x6401",
-  "firmwareVersion": 5,
+  "firmwareVersion": 6,
   "keycodes": ["qmk_lighting"],
   "matrix": {
     "rows": 6,
     "cols": 4
   },
   "menus": [
+    "qmk_rgb_matrix",
     {
       "label": "Layer Lighting",
       "content": [
@@ -129,8 +130,7 @@
                 "Rainbow Pinwheel"
               ]
             },
-            { "label": "Speed", "type": "range", "options": [0, 255], "content": ["id_layer_speed[4]", 0, 4, 4] },
-            { "label": "EEPROM", "type": "label", "content": ["EE_CLR is mapped on the SETTINGS layer at R5/C2."] }
+            { "label": "Speed", "type": "range", "options": [0, 255], "content": ["id_layer_speed[4]", 0, 4, 4] }
           ]
         }
       ]
