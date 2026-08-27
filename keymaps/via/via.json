@@ -14,7 +14,7 @@
       "label": "Layer Matrix",
       "content": [
         {
-          "label": "NUMPAD",
+          "label": "CREATIVE",
           "content": [
             {
               "label": "Effect",
@@ -39,7 +39,7 @@
           ]
         },
         {
-          "label": "EDIT",
+          "label": "NUMPAD",
           "content": [
             {
               "label": "Effect",
@@ -89,7 +89,7 @@
           ]
         },
         {
-          "label": "INKSCAPE",
+          "label": "GRAPHICS",
           "content": [
             {
               "label": "Effect",
