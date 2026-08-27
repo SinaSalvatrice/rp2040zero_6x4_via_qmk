@@ -445,6 +445,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         RM_VALU,        RM_VALD,    RM_NEXT,    RM_TOGG,
         RM_SATU,        RM_SATD,    KC_NO,      TO(0),
         TO(1),          TO(2),      TO(3),      TO(0),
-        KC_NO,          KC_NO,      KC_NO,      SAFE_BOOT
+        KC_NO,          KC_NO,      EE_CLR,     SAFE_BOOT
     )
 };
