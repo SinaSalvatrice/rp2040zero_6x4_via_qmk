@@ -7,10 +7,10 @@
 #define LAYER_EFFECT_COUNT 10
 
 enum layer_names {
+    _CREATIVE,
     _NUMPAD,
-    _EDIT,
     _NAV,
-    _INKSCAPE,
+    _GRAPHICS,
     _SETTINGS
 };
 
@@ -56,7 +56,7 @@ static rgb_ui_config_t rgb_cfg = {
     .layer_speed  = {32, 24, 64, 72, 32}
 };
 
-static uint8_t last_layer = _NUMPAD;
+static uint8_t last_layer = _CREATIVE;
 static bool encoder_btn_pressed = false;
 static bool encoder_btn_consumed = false;
 static uint16_t encoder_btn_tmr = 0;
@@ -65,7 +65,7 @@ static uint8_t reactive_led = 0;
 static uint32_t reactive_tmr = 0;
 
 static uint8_t clamp_layer(uint8_t layer) {
-    return layer < LAYER_COUNT ? layer : _NUMPAD;
+    return layer < LAYER_COUNT ? layer : _CREATIVE;
 }
 
 static uint8_t clamp_effect(uint8_t effect) {
@@ -169,7 +169,7 @@ static void apply_layer_profile(uint8_t layer) {
 }
 
 static void handle_encoder_button_tap(void) {
-    if (last_layer == _INKSCAPE) {
+    if (last_layer == _GRAPHICS) {
         tap_code(KC_Q);
     } else {
         rgb_matrix_toggle_noeeprom();
@@ -449,6 +449,17 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
 }
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
+    // Universal GIMP/Inkscape layer. The three existing 2u keys are Ctrl, Shift and Alt.
+    [_CREATIVE] = LAYOUT_6x4(
+        KC_NO,          TO(0),      MO(4),      KC_BSPC,
+        KC_S,           KC_C,       KC_V,       KC_Z,
+        KC_B,           KC_N,       KC_X,       KC_LCTL,
+        KC_LEFT,        KC_UP,      KC_RIGHT,   KC_NO,
+        KC_A,           KC_DOWN,    KC_ENT,     KC_LSFT,
+        KC_NO,          KC_LALT,    KC_SPACE,   KC_NO
+    ),
+
+    // Original numpad, moved off the base layer without changing its key positions.
     [_NUMPAD] = LAYOUT_6x4(
         KC_NO,          TO(0),          MO(4),          KC_BSPC,
         KC_NUM,         KC_PAST,        KC_PSLS,        KC_PMNS,
@@ -458,31 +469,23 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,          KC_P0,          KC_PDOT,        KC_NO
     ),
 
-    [_EDIT] = LAYOUT_6x4(
-        KC_NO,               TO(0),                MO(4),                KC_BSPC,
-        KC_NO,               KC_NO,                LCTL(KC_V),           LCTL(KC_A),
-        LCTL(KC_Z),          S(KC_HOME),           LCTL(KC_R),           LCTL(KC_C),
-        S(KC_LEFT),          LCTL(KC_S),           S(KC_RGHT),           KC_NO,
-        LCTL(LSFT(KC_LEFT)), S(KC_END),            LCTL(LSFT(KC_RGHT)),  KC_PENT,
-        KC_NO,               KC_SPACE,             LCTL(KC_X),           KC_NO
-    ),
-
     [_NAV] = LAYOUT_6x4(
         KC_NO,                   TO(0),                MO(4),                    KC_NO,
         KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
-        KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
+        KC_NO,                   KC_NO,                KC_NO,                    KC_LCTL,
         LALT(LCTL(KC_LEFT)),     KC_NO,                LALT(LCTL(KC_RGHT)),      KC_NO,
-        LCTL(LGUI(KC_LEFT)),     KC_NO,                LCTL(LGUI(KC_RGHT)),      KC_NO,
-        KC_NO,                   KC_NO,                LCTL(LALT(KC_DEL)),       KC_NO
+        LCTL(LGUI(KC_LEFT)),     KC_NO,                LCTL(LGUI(KC_RGHT)),      KC_LSFT,
+        KC_NO,                   KC_LALT,              LCTL(LALT(KC_DEL)),       KC_NO
     ),
 
-    [_INKSCAPE] = LAYOUT_6x4(
-        KC_NO,                   TO(0),                MO(4),                    LCTL(KC_Z),
-        KC_S,                    KC_N,                 KC_B,                     MS_BTN1,
-        LCTL(KC_S),              KC_UP,                LCTL(KC_V),               LCTL(KC_K),
-        KC_LEFT,                 LCTL(KC_C),           KC_RIGHT,                 LCTL(KC_K),
-        KC_S,                    KC_DOWN,              KC_N,                     LCTL(KC_Y),
-        KC_LCTL,                 KC_LCTL,              KC_LSFT,                  LCTL(KC_Y)
+    // Extra graphics tools shared by GIMP/Inkscape; modifier positions stay consistent.
+    [_GRAPHICS] = LAYOUT_6x4(
+        KC_NO,          TO(0),      MO(4),      KC_ESC,
+        KC_K,           KC_R,       KC_E,       MS_BTN1,
+        KC_P,           KC_F,       KC_G,       KC_LCTL,
+        KC_LEFT,        KC_UP,      KC_RIGHT,   KC_NO,
+        KC_T,           KC_DOWN,    KC_ENT,     KC_LSFT,
+        KC_NO,          KC_LALT,    KC_SPACE,   KC_NO
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
