@@ -29,7 +29,6 @@
     "driver": "ws2812",
     "max_brightness": 120,
     "default": {
-      "on": true,
       "animation": "solid_color",
       "hue": 149,
       "sat": 255,
