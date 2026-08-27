@@ -39,10 +39,24 @@
     "animations": {
       "solid_color": true,
       "breathing": true,
-      "solid_reactive_simple": true,
-      "splash": true,
+      "gradient_left_right": true,
+      "cycle_all": true,
       "cycle_left_right": true,
-      "cycle_pinwheel": true
+      "cycle_up_down": true,
+      "rainbow_moving_chevron": true,
+      "cycle_out_in": true,
+      "cycle_out_in_dual": true,
+      "cycle_pinwheel": true,
+      "cycle_spiral": true,
+      "dual_beacon": true,
+      "rainbow_beacon": true,
+      "jellybean_raindrops": true,
+      "hue_pendulum": true,
+      "pixel_rain": true,
+      "solid_reactive_simple": true,
+      "solid_reactive_wide": true,
+      "splash": true,
+      "multisplash": true
     },
     "layout": [
       { "x": 0,   "y": 0,  "flags": 2 },
