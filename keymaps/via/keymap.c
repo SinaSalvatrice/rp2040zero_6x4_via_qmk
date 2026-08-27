@@ -281,7 +281,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case SAFE_EEPROM_RESET:
             if (encoder_button_is_pressed()) {
                 encoder_btn_consumed = true;
+                // Reset both QMK's persistent settings and VIA's separate
+                // dynamic-keymap/macro storage, then reload the keymap from flash.
                 eeconfig_init();
+                eeconfig_init_via();
                 reset_keyboard();
             }
             return false;
