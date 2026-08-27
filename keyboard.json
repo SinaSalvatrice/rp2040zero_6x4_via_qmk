@@ -34,14 +34,16 @@
       "hue": 149,
       "sat": 255,
       "val": 40,
-      "speed": 128,
+      "speed": 32,
       "flags": 255
     },
     "animations": {
       "solid_color": true,
       "breathing": true,
       "solid_reactive_simple": true,
-      "splash": true
+      "splash": true,
+      "hue_pendulum": true,
+      "starlight_smooth": true
     },
     "layout": [
       { "x": 0,   "y": 0,  "flags": 2 },
