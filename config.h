@@ -12,9 +12,9 @@
 // VIA custom layer-lighting UI + persistent settings.
 // Each of the five layers stores two independently selectable colors,
 // an effect and its speed.
-#define VIA_FIRMWARE_VERSION 7
+#define VIA_FIRMWARE_VERSION 8
 #define EECONFIG_USER_DATA_SIZE 32
-#define EECONFIG_USER_DATA_VERSION 4
+#define EECONFIG_USER_DATA_VERSION 5
 
 #define USB_SUSPEND_WAKEUP_DELAY 0
 #define DEBOUNCE 5
