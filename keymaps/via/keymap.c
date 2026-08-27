@@ -159,19 +159,6 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 }
 #endif
 
-bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) {
-    bool is_to_base = keycode >= QK_TO && keycode <= QK_TO_MAX && QK_TO_GET_LAYER(keycode) == _NUMPAD;
-
-    if (is_to_base) {
-        if (record->event.pressed) {
-            layer_move(_NUMPAD);
-        }
-        return false;
-    }
-
-    return true;
-}
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!record->event.pressed) {
         return true;
