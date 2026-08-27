@@ -4,8 +4,7 @@
 #include "via.h"
 
 #define LAYER_COUNT 5
-#define LAYER_EFFECT_COUNT 4
-#define SPLASH_SPEED 196
+#define LAYER_EFFECT_COUNT 10
 
 enum layer_names {
     _NUMPAD,
@@ -20,40 +19,61 @@ enum custom_keycodes {
 };
 
 enum via_rgb_ui_value {
-    id_layer_color = 1,
-    id_layer_effect
+    id_layer_color_a = 1,
+    id_layer_color_b,
+    id_layer_effect,
+    id_layer_speed
+};
+
+enum layer_effects {
+    LFX_SOLID = 0,
+    LFX_BREATHING,
+    LFX_REACTIVE,
+    LFX_SPLASH,
+    LFX_DUAL_GRADIENT,
+    LFX_DUAL_BREATH,
+    LFX_DUAL_WAVE,
+    LFX_DUAL_REACTIVE,
+    LFX_HUE_PENDULUM,
+    LFX_STARLIGHT_SMOOTH
 };
 
 typedef struct {
-    uint8_t layer_hue[LAYER_COUNT];
-    uint8_t layer_sat[LAYER_COUNT];
+    uint8_t layer_hue_a[LAYER_COUNT];
+    uint8_t layer_sat_a[LAYER_COUNT];
+    uint8_t layer_hue_b[LAYER_COUNT];
+    uint8_t layer_sat_b[LAYER_COUNT];
     uint8_t layer_effect[LAYER_COUNT];
+    uint8_t layer_speed[LAYER_COUNT];
 } rgb_ui_config_t;
 
-static const uint8_t layer_effect_modes[LAYER_EFFECT_COUNT] = {
-    RGB_MATRIX_SOLID_COLOR,
-    RGB_MATRIX_BREATHING,
-    RGB_MATRIX_SOLID_REACTIVE_SIMPLE,
-    RGB_MATRIX_SPLASH
-};
-
 static rgb_ui_config_t rgb_cfg = {
-    .layer_hue    = {149, 64, 170, 155, 0},
-    .layer_sat    = {255, 255, 255, 255, 255},
-    .layer_effect = {0, 1, 2, 3, 0}
+    .layer_hue_a  = {149, 64, 170, 155, 0},
+    .layer_sat_a  = {255, 255, 255, 255, 255},
+    .layer_hue_b  = {190, 170, 210, 96, 160},
+    .layer_sat_b  = {255, 255, 255, 255, 255},
+    .layer_effect = {LFX_SOLID, LFX_BREATHING, LFX_REACTIVE, LFX_SPLASH, LFX_SOLID},
+    .layer_speed  = {32, 24, 64, 72, 32}
 };
 
 static uint8_t last_layer = _NUMPAD;
 static bool encoder_btn_pressed = false;
 static bool encoder_btn_consumed = false;
 static uint16_t encoder_btn_tmr = 0;
+static bool reactive_led_valid = false;
+static uint8_t reactive_led = 0;
+static uint32_t reactive_tmr = 0;
 
 static uint8_t clamp_layer(uint8_t layer) {
     return layer < LAYER_COUNT ? layer : _NUMPAD;
 }
 
 static uint8_t clamp_effect(uint8_t effect) {
-    return effect < LAYER_EFFECT_COUNT ? effect : 0;
+    return effect < LAYER_EFFECT_COUNT ? effect : LFX_SOLID;
+}
+
+static bool is_dual_effect(uint8_t effect) {
+    return effect >= LFX_DUAL_GRADIENT && effect <= LFX_DUAL_REACTIVE;
 }
 
 static bool encoder_button_is_pressed(void) {
@@ -62,6 +82,40 @@ static bool encoder_button_is_pressed(void) {
 #else
     return false;
 #endif
+}
+
+static uint8_t triangle8(uint8_t value) {
+    if (value < 128) {
+        return value * 2;
+    }
+    return (255 - value) * 2;
+}
+
+static uint8_t blend8(uint8_t a, uint8_t b, uint8_t amount) {
+    int16_t delta = (int16_t)b - (int16_t)a;
+    return (uint8_t)((int16_t)a + (delta * amount) / 255);
+}
+
+static rgb_t blend_rgb(rgb_t a, rgb_t b, uint8_t amount) {
+    rgb_t out = {
+        .r = blend8(a.r, b.r, amount),
+        .g = blend8(a.g, b.g, amount),
+        .b = blend8(a.b, b.b, amount)
+    };
+    return out;
+}
+
+static rgb_t layer_color(uint8_t hue, uint8_t sat, uint8_t val) {
+    hsv_t hsv = {.h = hue, .s = sat, .v = val};
+    return hsv_to_rgb(hsv);
+}
+
+static uint32_t animation_cycle_ms(uint8_t speed) {
+    return 14000U - ((uint32_t)speed * 44U);
+}
+
+static uint32_t reactive_decay_ms(uint8_t speed) {
+    return 2200U - ((uint32_t)speed * 5U);
 }
 
 static void rgb_ui_save(void) {
@@ -81,15 +135,36 @@ static void rgb_ui_load(void) {
     }
 }
 
+static uint8_t qmk_mode_for_effect(uint8_t effect) {
+    switch (effect) {
+        case LFX_BREATHING:
+            return RGB_MATRIX_BREATHING;
+        case LFX_REACTIVE:
+            return RGB_MATRIX_SOLID_REACTIVE_SIMPLE;
+        case LFX_SPLASH:
+            return RGB_MATRIX_SPLASH;
+        case LFX_HUE_PENDULUM:
+            return RGB_MATRIX_HUE_PENDULUM;
+        case LFX_STARLIGHT_SMOOTH:
+            return RGB_MATRIX_STARLIGHT_SMOOTH;
+        case LFX_SOLID:
+        default:
+            return RGB_MATRIX_SOLID_COLOR;
+    }
+}
+
 static void apply_layer_profile(uint8_t layer) {
     uint8_t safe_layer = clamp_layer(layer);
     uint8_t effect = clamp_effect(rgb_cfg.layer_effect[safe_layer]);
     hsv_t hsv = rgb_matrix_get_hsv();
 
-    rgb_matrix_mode_noeeprom(layer_effect_modes[effect]);
-    rgb_matrix_sethsv_noeeprom(rgb_cfg.layer_hue[safe_layer], rgb_cfg.layer_sat[safe_layer], hsv.v);
-    if (layer_effect_modes[effect] == RGB_MATRIX_SPLASH) {
-        rgb_matrix_set_speed_noeeprom(SPLASH_SPEED);
+    rgb_matrix_sethsv_noeeprom(rgb_cfg.layer_hue_a[safe_layer], rgb_cfg.layer_sat_a[safe_layer], hsv.v);
+    rgb_matrix_set_speed_noeeprom(rgb_cfg.layer_speed[safe_layer]);
+
+    if (is_dual_effect(effect)) {
+        rgb_matrix_mode_noeeprom(RGB_MATRIX_SOLID_COLOR);
+    } else {
+        rgb_matrix_mode_noeeprom(qmk_mode_for_effect(effect));
     }
 }
 
@@ -159,8 +234,26 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 }
 #endif
 
+static void remember_reactive_key(keyrecord_t *record) {
+    uint8_t row = record->event.key.row;
+    uint8_t col = record->event.key.col;
+
+    if (row >= MATRIX_ROWS || col >= MATRIX_COLS) {
+        return;
+    }
+
+    uint8_t led = g_led_config.matrix_co[row][col];
+    if (led != NO_LED && led < RGB_MATRIX_LED_COUNT) {
+        reactive_led = led;
+        reactive_led_valid = true;
+        reactive_tmr = timer_read32();
+    }
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (!record->event.pressed) {
+    if (record->event.pressed) {
+        remember_reactive_key(record);
+    } else {
         return true;
     }
 
@@ -176,19 +269,93 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
+bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
+    uint8_t layer = clamp_layer(last_layer);
+    uint8_t effect = clamp_effect(rgb_cfg.layer_effect[layer]);
+
+    if (!is_dual_effect(effect)) {
+        return false;
+    }
+
+    hsv_t current_hsv = rgb_matrix_get_hsv();
+    rgb_t color_a = layer_color(rgb_cfg.layer_hue_a[layer], rgb_cfg.layer_sat_a[layer], current_hsv.v);
+    rgb_t color_b = layer_color(rgb_cfg.layer_hue_b[layer], rgb_cfg.layer_sat_b[layer], current_hsv.v);
+    uint8_t speed = rgb_cfg.layer_speed[layer];
+    uint32_t cycle_ms = animation_cycle_ms(speed);
+    uint8_t phase = (uint8_t)(((timer_read32() % cycle_ms) * 255U) / cycle_ms);
+
+    for (uint8_t i = led_min; i < led_max; i++) {
+        uint8_t amount = 0;
+
+        switch (effect) {
+            case LFX_DUAL_GRADIENT:
+                amount = (uint8_t)(((uint16_t)g_led_config.point[i].x * 255U) / 224U);
+                break;
+
+            case LFX_DUAL_BREATH:
+                amount = triangle8(phase);
+                break;
+
+            case LFX_DUAL_WAVE: {
+                uint8_t x_phase = (uint8_t)(((uint16_t)g_led_config.point[i].x * 255U) / 224U);
+                amount = triangle8((uint8_t)(phase + x_phase));
+                break;
+            }
+
+            case LFX_DUAL_REACTIVE: {
+                uint32_t decay_ms = reactive_decay_ms(speed);
+                uint32_t elapsed = timer_elapsed32(reactive_tmr);
+
+                if (!reactive_led_valid || elapsed >= decay_ms) {
+                    amount = 0;
+                    break;
+                }
+
+                uint8_t strength = (uint8_t)(255U - ((elapsed * 255U) / decay_ms));
+                uint16_t dx = g_led_config.point[i].x > g_led_config.point[reactive_led].x
+                                  ? g_led_config.point[i].x - g_led_config.point[reactive_led].x
+                                  : g_led_config.point[reactive_led].x - g_led_config.point[i].x;
+                uint16_t dy = g_led_config.point[i].y > g_led_config.point[reactive_led].y
+                                  ? g_led_config.point[i].y - g_led_config.point[reactive_led].y
+                                  : g_led_config.point[reactive_led].y - g_led_config.point[i].y;
+                uint16_t distance = dx + (dy * 3U);
+                uint8_t falloff = distance >= 96U ? 0 : (uint8_t)(255U - ((distance * 255U) / 96U));
+                amount = (uint8_t)(((uint16_t)strength * falloff) / 255U);
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        rgb_t mixed = blend_rgb(color_a, color_b, amount);
+        rgb_matrix_set_color(i, mixed.r, mixed.g, mixed.b);
+    }
+
+    return false;
+}
+
 static void via_rgb_ui_set_value(uint8_t *data) {
     uint8_t value_id = data[0];
     uint8_t *value_data = &data[1];
 
     switch (value_id) {
-        case id_layer_color: {
+        case id_layer_color_a: {
             uint8_t index = value_data[0];
             if (index < LAYER_COUNT) {
-                rgb_cfg.layer_hue[index] = value_data[1];
-                rgb_cfg.layer_sat[index] = value_data[2];
+                rgb_cfg.layer_hue_a[index] = value_data[1];
+                rgb_cfg.layer_sat_a[index] = value_data[2];
                 if (index == last_layer) {
                     apply_layer_profile(last_layer);
                 }
+            }
+            break;
+        }
+        case id_layer_color_b: {
+            uint8_t index = value_data[0];
+            if (index < LAYER_COUNT) {
+                rgb_cfg.layer_hue_b[index] = value_data[1];
+                rgb_cfg.layer_sat_b[index] = value_data[2];
             }
             break;
         }
@@ -196,6 +363,16 @@ static void via_rgb_ui_set_value(uint8_t *data) {
             uint8_t index = value_data[0];
             if (index < LAYER_COUNT) {
                 rgb_cfg.layer_effect[index] = clamp_effect(value_data[1]);
+                if (index == last_layer) {
+                    apply_layer_profile(last_layer);
+                }
+            }
+            break;
+        }
+        case id_layer_speed: {
+            uint8_t index = value_data[0];
+            if (index < LAYER_COUNT) {
+                rgb_cfg.layer_speed[index] = value_data[1];
                 if (index == last_layer) {
                     apply_layer_profile(last_layer);
                 }
@@ -210,11 +387,19 @@ static void via_rgb_ui_get_value(uint8_t *data) {
     uint8_t *value_data = &data[1];
 
     switch (value_id) {
-        case id_layer_color: {
+        case id_layer_color_a: {
             uint8_t index = value_data[0];
             if (index < LAYER_COUNT) {
-                value_data[1] = rgb_cfg.layer_hue[index];
-                value_data[2] = rgb_cfg.layer_sat[index];
+                value_data[1] = rgb_cfg.layer_hue_a[index];
+                value_data[2] = rgb_cfg.layer_sat_a[index];
+            }
+            break;
+        }
+        case id_layer_color_b: {
+            uint8_t index = value_data[0];
+            if (index < LAYER_COUNT) {
+                value_data[1] = rgb_cfg.layer_hue_b[index];
+                value_data[2] = rgb_cfg.layer_sat_b[index];
             }
             break;
         }
@@ -222,6 +407,13 @@ static void via_rgb_ui_get_value(uint8_t *data) {
             uint8_t index = value_data[0];
             if (index < LAYER_COUNT) {
                 value_data[1] = clamp_effect(rgb_cfg.layer_effect[index]);
+            }
+            break;
+        }
+        case id_layer_speed: {
+            uint8_t index = value_data[0];
+            if (index < LAYER_COUNT) {
+                value_data[1] = rgb_cfg.layer_speed[index];
             }
             break;
         }
