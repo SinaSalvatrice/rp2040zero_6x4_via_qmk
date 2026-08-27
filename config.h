@@ -7,12 +7,13 @@
 #define RGB_MATRIX_DEFAULT_HUE 149
 #define RGB_MATRIX_DEFAULT_SAT 255
 #define RGB_MATRIX_DEFAULT_VAL 40
-#define RGB_MATRIX_DEFAULT_SPD 128
+#define RGB_MATRIX_DEFAULT_SPD 32
 
-// VIA custom layer-color UI + persistent settings.
-#define VIA_FIRMWARE_VERSION 2
-#define EECONFIG_USER_DATA_SIZE 16
-#define EECONFIG_USER_DATA_VERSION 2
+// VIA custom layer-lighting UI + persistent settings.
+// Each of the five layers stores two colors, an effect and its speed.
+#define VIA_FIRMWARE_VERSION 3
+#define EECONFIG_USER_DATA_SIZE 32
+#define EECONFIG_USER_DATA_VERSION 3
 
 #define USB_SUSPEND_WAKEUP_DELAY 0
 #define DEBOUNCE 5
