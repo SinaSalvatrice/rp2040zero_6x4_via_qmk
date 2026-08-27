@@ -67,7 +67,7 @@ jobs:
       - name: Collect firmware artifacts
         run: |
           set -e
-          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/via" "$GITHUB_WORKSPACE/artifacts/vial"
           VIA_UF2_FILE=$(find "$HOME/qmk_firmware" -type f -name 'rp2040zero_6x4_via_qmk_via.uf2' | head -n 1)
           VIAL_UF2_FILE=$(find "$HOME/qmk_firmware" -type f -name 'rp2040zero_6x4_via_qmk_vial.uf2' | head -n 1)
           if [ -z "$VIA_UF2_FILE" ]; then
@@ -78,19 +78,21 @@ jobs:
             echo "Expected Vial firmware rp2040zero_6x4_via_qmk_vial.uf2 was not produced."
             exit 1
           fi
-          cp "$VIA_UF2_FILE" "$GITHUB_WORKSPACE/artifacts/"
-          cp "$VIAL_UF2_FILE" "$GITHUB_WORKSPACE/artifacts/"
+          cp "$VIA_UF2_FILE" "$GITHUB_WORKSPACE/artifacts/via/"
+          cp "$GITHUB_WORKSPACE/keymaps/via/via.json" "$GITHUB_WORKSPACE/artifacts/via/via.json"
+          cp "$VIAL_UF2_FILE" "$GITHUB_WORKSPACE/artifacts/vial/"
+          printf 'Firmware commit: %s\nUse the UF2 and via.json from this same artifact together.\n' "$GITHUB_SHA" > "$GITHUB_WORKSPACE/artifacts/via/README.txt"
 
       - name: Upload VIA firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rp2040zero_6x4_via_qmk_via_firmware
-          path: artifacts/rp2040zero_6x4_via_qmk_via.uf2
+          name: rp2040zero_6x4_via_qmk_via_bundle
+          path: artifacts/via/
           if-no-files-found: error
 
       - name: Upload Vial firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: rp2040zero_6x4_via_qmk_vial_firmware
-          path: artifacts/rp2040zero_6x4_via_qmk_vial.uf2
+          path: artifacts/vial/
           if-no-files-found: error
