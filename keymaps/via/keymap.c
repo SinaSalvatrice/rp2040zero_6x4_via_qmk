@@ -5,8 +5,6 @@
 
 #define LAYER_COUNT 5
 #define LAYER_EFFECT_COUNT 9
-#define BOOT_MIN_BRIGHTNESS 40
-#define BOOT_LIGHT_REASSERT_MS 750
 
 enum layer_names {
     _CREATIVE,
@@ -61,8 +59,6 @@ static uint8_t last_layer = _CREATIVE;
 static bool encoder_btn_pressed = false;
 static bool encoder_btn_consumed = false;
 static uint16_t encoder_btn_tmr = 0;
-static bool boot_light_reassert_pending = false;
-static uint32_t boot_light_tmr = 0;
 
 static uint8_t clamp_layer(uint8_t layer) {
     return layer < LAYER_COUNT ? layer : _CREATIVE;
@@ -164,25 +160,6 @@ static void apply_layer_profile(uint8_t layer) {
     }
 }
 
-static void ensure_lighting_on(bool persist) {
-    if (!rgb_matrix_is_enabled()) {
-        if (persist) {
-            rgb_matrix_enable();
-        } else {
-            rgb_matrix_enable_noeeprom();
-        }
-    }
-
-    hsv_t hsv = rgb_matrix_get_hsv();
-    if (hsv.v == 0) {
-        if (persist) {
-            rgb_matrix_sethsv(hsv.h, hsv.s, BOOT_MIN_BRIGHTNESS);
-        } else {
-            rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, BOOT_MIN_BRIGHTNESS);
-        }
-    }
-}
-
 static void handle_encoder_button_tap(void) {
     if (last_layer == _GRAPHICS) {
         tap_code(KC_Q);
@@ -198,24 +175,10 @@ void keyboard_post_init_user(void) {
 
     rgb_ui_load();
     last_layer = clamp_layer(get_highest_layer(layer_state | default_layer_state));
-
-    // "On" is the actual saved boot state, not just a temporary runtime override.
-    ensure_lighting_on(true);
     apply_layer_profile(last_layer);
-
-    // Reassert once after USB/QMK startup has fully settled. This is deliberately
-    // no-EEPROM: it protects the runtime state without causing another flash write.
-    boot_light_tmr = timer_read32();
-    boot_light_reassert_pending = true;
 }
 
 void matrix_scan_user(void) {
-    if (boot_light_reassert_pending && timer_elapsed32(boot_light_tmr) >= BOOT_LIGHT_REASSERT_MS) {
-        boot_light_reassert_pending = false;
-        ensure_lighting_on(false);
-        apply_layer_profile(last_layer);
-    }
-
 #ifdef ENCODER_BTN_PIN
     if (timer_elapsed(encoder_btn_tmr) < 10) {
         return;
