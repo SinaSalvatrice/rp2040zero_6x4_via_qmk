@@ -164,8 +164,6 @@ static void apply_layer_profile(uint8_t layer) {
 static void handle_encoder_button_tap(void) {
     if (last_layer == _GRAPHICS) {
         tap_code(KC_Q);
-    } else {
-        rgb_matrix_toggle_noeeprom();
     }
 }
 
@@ -180,6 +178,12 @@ void keyboard_post_init_user(void) {
 }
 
 void matrix_scan_user(void) {
+    // Lighting is not a persistent on/off feature on this pad.
+    // If QMK or an old EEPROM state says "off", immediately return to on.
+    if (!rgb_matrix_is_enabled()) {
+        rgb_matrix_enable_noeeprom();
+    }
+
 #ifdef ENCODER_BTN_PIN
     if (timer_elapsed(encoder_btn_tmr) < 10) {
         return;
@@ -232,6 +236,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 
     switch (keycode) {
+        case RM_TOGG:
+            // This pad has no persistent lighting-off state.
+            return false;
         case SAFE_EEPROM_RESET:
             if (encoder_button_is_pressed()) {
                 encoder_btn_consumed = true;
@@ -447,7 +454,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_SETTINGS] = LAYOUT_6x4(
         KC_NO,          TO(0),      MO(4),      RM_PREV,
         RM_SPDU,        RM_SPDD,    RM_HUEU,    RM_HUED,
-        RM_VALU,        RM_VALD,    RM_NEXT,    RM_TOGG,
+        RM_VALU,        RM_VALD,    RM_NEXT,    KC_NO,
         RM_SATU,        RM_SATD,    KC_NO,      TO(0),
         TO(1),          TO(2),      TO(3),      TO(0),
         KC_NO,          KC_NO,      SAFE_EEPROM_RESET, SAFE_BOOT
