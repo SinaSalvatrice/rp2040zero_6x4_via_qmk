@@ -2,8 +2,8 @@
   "name": "RP2040 Zero 6x4 VIA",
   "vendorId": "0x5349",
   "productId": "0x6401",
-  "firmwareVersion": 6,
-  "keycodes": ["qmk_lighting"],
+  "firmwareVersion": 7,
+  "keycodes": ["qmk_rgb_matrix_keycodes"],
   "matrix": {
     "rows": 6,
     "cols": 4
@@ -11,7 +11,7 @@
   "menus": [
     "qmk_rgb_matrix",
     {
-      "label": "Layer Lighting",
+      "label": "Dual Color Layers",
       "content": [
         {
           "label": "CREATIVE",
