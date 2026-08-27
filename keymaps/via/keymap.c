@@ -15,7 +15,8 @@ enum layer_names {
 };
 
 enum custom_keycodes {
-    SAFE_BOOT = SAFE_RANGE
+    SAFE_BOOT = SAFE_RANGE,
+    SAFE_EEPROM_RESET
 };
 
 enum via_rgb_ui_value {
@@ -231,6 +232,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 
     switch (keycode) {
+        case SAFE_EEPROM_RESET:
+            if (encoder_button_is_pressed()) {
+                encoder_btn_consumed = true;
+                eeconfig_init();
+                reset_keyboard();
+            }
+            return false;
         case SAFE_BOOT:
             if (encoder_button_is_pressed()) {
                 encoder_btn_consumed = true;
@@ -400,7 +408,6 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
 }
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    // Universal GIMP/Inkscape layer. The three existing 2u keys are Ctrl, Shift and Alt.
     [_CREATIVE] = LAYOUT_6x4(
         KC_NO,          TO(0),      MO(4),      KC_BSPC,
         KC_S,           KC_C,       KC_V,       KC_Z,
@@ -410,7 +417,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,          KC_LALT,    KC_SPACE,   KC_NO
     ),
 
-    // Original numpad, moved off the base layer without changing its key positions.
     [_NUMPAD] = LAYOUT_6x4(
         KC_NO,          TO(0),          MO(4),          KC_BSPC,
         KC_NUM,         KC_PAST,        KC_PSLS,        KC_PMNS,
@@ -429,7 +435,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,                   KC_LALT,              LCTL(LALT(KC_DEL)),       KC_NO
     ),
 
-    // Extra graphics tools shared by GIMP/Inkscape; modifier positions stay consistent.
     [_GRAPHICS] = LAYOUT_6x4(
         KC_NO,          TO(0),      MO(4),      KC_ESC,
         KC_K,           KC_R,       KC_E,       MS_BTN1,
@@ -445,6 +450,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         RM_VALU,        RM_VALD,    RM_NEXT,    RM_TOGG,
         RM_SATU,        RM_SATD,    KC_NO,      TO(0),
         TO(1),          TO(2),      TO(3),      TO(0),
-        KC_NO,          KC_NO,      EE_CLR,     SAFE_BOOT
+        KC_NO,          KC_NO,      SAFE_EEPROM_RESET, SAFE_BOOT
     )
 };
