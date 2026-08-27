@@ -1,11 +1,28 @@
 #include QMK_KEYBOARD_H
 
 // This macropad uses layer 0 as its one and only base layer.
-// QMK's TO(layer) intentionally leaves the default layer active, so a stale
-// DF()/PDF()/EEPROM default on layer 1+ can sit above TO(0) and make it look
-// as if TO(0) does not work. Clamp the default-layer stack to layer 0 for all
-// keymaps while leaving the normal overlay layer_state free for TO/MO/etc.
+// Keep the default-layer stack pinned to layer 0.
 layer_state_t default_layer_state_set_kb(layer_state_t state) {
     (void)state;
     return default_layer_state_set_user((layer_state_t)1 << 0);
+}
+
+// Make TO(0) a hard return-to-base command.
+// This runs before VIA and QMK's normal TO() processing, so it also works
+// with dynamically stored VIA keymaps. R0/C1 is additionally treated as the
+// dedicated return key on every non-base layer, even if stale VIA EEPROM data
+// has a different keycode stored there.
+bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    if (record->event.pressed) {
+        bool is_to_base = keycode >= QK_TO && keycode <= QK_TO_MAX && QK_TO_GET_LAYER(keycode) == 0;
+        bool is_physical_return_key = record->event.key.row == 0 && record->event.key.col == 1 && get_highest_layer(layer_state | default_layer_state) != 0;
+
+        if (is_to_base || is_physical_return_key) {
+            set_single_default_layer(0);
+            layer_move(0);
+            return false;
+        }
+    }
+
+    return process_record_user(keycode, record);
 }
