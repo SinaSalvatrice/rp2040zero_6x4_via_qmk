@@ -25,7 +25,7 @@
     "driver": "vendor"
   },
   "rgb_matrix": {
-    "led_count": 21,
+    "led_count": 24,
     "driver": "ws2812",
     "max_brightness": 120,
     "default": {
