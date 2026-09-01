@@ -323,7 +323,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 break;
 
             case LFX_DUAL_BREATH:
-                amount = triangle8(phase);
+                amount = sin8(phase);
                 break;
 
             case LFX_DUAL_WAVE: {
