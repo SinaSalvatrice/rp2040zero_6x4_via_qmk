@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # Last QMK revision before QMK keycodes were bumped from 0.0.8 to 0.0.9.
+  QMK_COMMIT: 0d401d11821a84895b59270bbb1d79e394720eb6
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,9 +39,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install qmk
 
-      - name: Set up QMK firmware
+      - name: Set up pinned QMK firmware
         run: |
-          qmk setup -H ~/qmk_firmware -y
+          rm -rf ~/qmk_firmware
+          git init ~/qmk_firmware
+          cd ~/qmk_firmware
+          git remote add origin https://github.com/qmk/qmk_firmware.git
+          git fetch --depth 1 origin "$QMK_COMMIT"
+          git checkout --detach FETCH_HEAD
+          qmk config user.qmk_home=~/qmk_firmware
+          grep -q '#define QMK_KEYCODES_VERSION_BCD 0x00000008' quantum/keycodes.h
+
+      - name: Pull submodules
+        run: cd $HOME/qmk_firmware && git submodule update --init --recursive
 
       - name: Copy keyboard into QMK tree
         run: |
