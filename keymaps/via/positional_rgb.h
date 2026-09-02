@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // Generic key/LED position layer for RGB effects.
@@ -117,21 +118,23 @@ static uint16_t positional_distance(positional_point_t a, positional_point_t b) 
     return (uint16_t)positional_isqrt32(squared);
 }
 
-static const positional_point_t *positional_rgb_key_position(uint8_t row, uint8_t col) {
+// Accessors are deliberately part of the small positional API so future
+// ripple/heatmap/comet effects can reuse the exact same geometry and event log.
+static inline const positional_point_t *positional_rgb_key_position(uint8_t row, uint8_t col) {
     if (row >= MATRIX_ROWS || col >= MATRIX_COLS) {
         return NULL;
     }
     return &positional_key_positions[row][col];
 }
 
-static const positional_point_t *positional_rgb_led_position(uint8_t led) {
+static inline const positional_point_t *positional_rgb_led_position(uint8_t led) {
     if (led >= POSITIONAL_RGB_LED_COUNT) {
         return NULL;
     }
     return &positional_led_positions[led];
 }
 
-static const positional_key_event_t *positional_rgb_recent_event(uint8_t newest_index) {
+static inline const positional_key_event_t *positional_rgb_recent_event(uint8_t newest_index) {
     if (newest_index >= POSITIONAL_RGB_EVENT_HISTORY) {
         return NULL;
     }
