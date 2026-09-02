@@ -20,6 +20,14 @@ enum custom_keycodes {
     SAFE_EEPROM_RESET
 };
 
+enum tap_dance_codes {
+    TD_BSPC_ESC
+};
+
+tap_dance_action_t tap_dance_actions[] = {
+    [TD_BSPC_ESC] = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC)
+};
+
 enum via_rgb_ui_value {
     id_layer_color_a = 1,
     id_layer_color_b,
@@ -488,7 +496,7 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_CREATIVE] = LAYOUT_6x4(
-        KC_NO,          TO(0),      MO(4),      KC_BSPC,
+        KC_NO,          TO(0),      MO(4),      TD(TD_BSPC_ESC),
         KC_S,           KC_C,       KC_V,       KC_Z,
         KC_B,           KC_N,       KC_X,       KC_LCTL,
         KC_LEFT,        KC_UP,      KC_RIGHT,   KC_NO,
