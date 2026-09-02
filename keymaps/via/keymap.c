@@ -2,6 +2,7 @@
 #include "eeconfig.h"
 #include "timer.h"
 #include "via.h"
+#include "positional_rgb.h"
 
 #define LAYER_COUNT 5
 #define LAYER_EFFECT_COUNT 23
@@ -196,7 +197,8 @@ static void apply_layer_profile(uint8_t layer) {
     rgb_matrix_sethsv_noeeprom(rgb_cfg.layer_hue_a[safe_layer], rgb_cfg.layer_sat_a[safe_layer], hsv.v);
     rgb_matrix_set_speed_noeeprom(rgb_cfg.layer_speed[safe_layer]);
 
-    if (is_dual_effect(effect)) {
+    if (is_dual_effect(effect) || effect == LFX_REACTIVE_SIMPLE) {
+        // Custom renderers own the LED output in the indicators callback.
         rgb_matrix_mode_noeeprom(RGB_MATRIX_SOLID_COLOR);
     } else {
         rgb_matrix_mode_noeeprom(qmk_mode_for_effect(effect));
@@ -214,6 +216,7 @@ void keyboard_post_init_user(void) {
     gpio_set_pin_input_high(ENCODER_BTN_PIN);
 #endif
 
+    positional_rgb_reset_state();
     rgb_ui_load();
     last_layer = clamp_layer(get_highest_layer(layer_state | default_layer_state));
     apply_layer_profile(last_layer);
@@ -271,6 +274,11 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 #endif
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    // Record physical key events independently of the currently assigned
+    // keycode. This is the bridge between the keyboard matrix and all future
+    // position-based LED effects (glow, ripple, heatmap, comet, ...).
+    positional_rgb_handle_key_event(record);
+
     if (!record->event.pressed) {
         return true;
     }
@@ -302,12 +310,24 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     uint8_t layer = clamp_layer(last_layer);
     uint8_t effect = clamp_effect(rgb_cfg.layer_effect[layer]);
+    hsv_t current_hsv = rgb_matrix_get_hsv();
+
+    if (effect == LFX_REACTIVE_SIMPLE) {
+        positional_rgb_render_reactive_glow(
+            led_min,
+            led_max,
+            rgb_cfg.layer_hue_a[layer],
+            rgb_cfg.layer_sat_a[layer],
+            current_hsv.v,
+            rgb_cfg.layer_speed[layer]
+        );
+        return false;
+    }
 
     if (!is_dual_effect(effect)) {
         return false;
     }
 
-    hsv_t current_hsv = rgb_matrix_get_hsv();
     rgb_t color_a = layer_color(rgb_cfg.layer_hue_a[layer], rgb_cfg.layer_sat_a[layer], current_hsv.v);
     rgb_t color_b = layer_color(rgb_cfg.layer_hue_b[layer], rgb_cfg.layer_sat_b[layer], current_hsv.v);
     uint8_t speed = rgb_cfg.layer_speed[layer];
