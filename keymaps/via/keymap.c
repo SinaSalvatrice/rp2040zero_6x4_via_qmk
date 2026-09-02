@@ -103,6 +103,16 @@ static uint8_t triangle8(uint8_t value) {
     return (255 - value) * 2;
 }
 
+static uint8_t smoothstep8(uint8_t value) {
+    uint32_t x = value;
+    uint32_t numerator = x * x * (765U - (2U * x));
+    return (uint8_t)((numerator + 32512U) / 65025U);
+}
+
+static uint8_t smooth_breath8(uint8_t phase) {
+    return smoothstep8(triangle8(phase));
+}
+
 static uint8_t blend8(uint8_t a, uint8_t b, uint8_t amount) {
     int16_t delta = (int16_t)b - (int16_t)a;
     return (uint8_t)((int16_t)a + (delta * amount) / 255);
@@ -343,7 +353,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 break;
 
             case LFX_DUAL_BREATH:
-                amount = sin8(phase);
+                amount = smooth_breath8(phase);
                 break;
 
             case LFX_DUAL_WAVE: {
