@@ -22,28 +22,14 @@ enum custom_keycodes {
 
 enum tap_dance_codes {
     TD_BSPC_ESC,
-    TD_LAYER_SELECT
-};
-
-static void layer_select_tap_dance(tap_dance_state_t *state, void *user_data) {
-    (void)user_data;
-
-    switch (state->count) {
-        case 1:
-            layer_move(_NAV);
-            break;
-        case 2:
-            layer_move(_UTILITY);
-            break;
-        default:
-            layer_move(_NUMPAD);
-            break;
-    }
-}
-
-tap_dance_action_t tap_dance_actions[] = {
-    [TD_BSPC_ESC] = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC),
-    [TD_LAYER_SELECT] = ACTION_TAP_DANCE_FN(layer_select_tap_dance)
+    TD_R5C0_MOD_TO_1,
+    TD_R5C1_MOD_TO_2,
+    TD_R5C2_MOD_TO_3,
+    TD_R5C0_NONE_TO_1,
+    TD_R5C1_NONE_TO_2,
+    TD_R5C1_P0_TO_2,
+    TD_R5C2_PDOT_TO_3,
+    TD_R5C2_SETTINGS_TO_3
 };
 
 enum via_rgb_ui_value {
@@ -121,6 +107,34 @@ static bool encoder_button_is_pressed(void) {
     return false;
 #endif
 }
+
+static void settings_r5c2_tap_dance(tap_dance_state_t *state, void *user_data) {
+    (void)user_data;
+
+    if (state->count >= 2) {
+        layer_move(_NUMPAD);
+        return;
+    }
+
+    if (encoder_button_is_pressed()) {
+        encoder_btn_consumed = true;
+        eeconfig_init();
+        eeconfig_init_via();
+        reset_keyboard();
+    }
+}
+
+tap_dance_action_t tap_dance_actions[] = {
+    [TD_BSPC_ESC]          = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC),
+    [TD_R5C0_MOD_TO_1]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_LCTL, _NAV),
+    [TD_R5C1_MOD_TO_2]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_LSFT, _UTILITY),
+    [TD_R5C2_MOD_TO_3]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_LALT, _NUMPAD),
+    [TD_R5C0_NONE_TO_1]    = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _NAV),
+    [TD_R5C1_NONE_TO_2]    = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _UTILITY),
+    [TD_R5C1_P0_TO_2]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_P0, _UTILITY),
+    [TD_R5C2_PDOT_TO_3]    = ACTION_TAP_DANCE_LAYER_MOVE(KC_PDOT, _NUMPAD),
+    [TD_R5C2_SETTINGS_TO_3] = ACTION_TAP_DANCE_FN(settings_r5c2_tap_dance)
+};
 
 static uint8_t triangle8(uint8_t value) {
     if (value < 128) {
@@ -519,7 +533,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_Z,                    KC_UP,                KC_Y,                        KC_A,
         KC_LEFT,                 KC_PENT,              KC_RGHT,                     KC_C,
         KC_T,                    KC_DOWN,              KC_M,                        KC_V,
-        KC_LCTL,                 KC_LSFT,              KC_LALT,                     KC_LWIN
+        TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
     ),
 
     [_NAV] = LAYOUT_6x4(
@@ -528,7 +542,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         LALT(KC_TAB),            KC_UP,                KC_NO,                       KC_LCTL,
         KC_LEFT,                 KC_NO,                KC_RGHT,                     KC_NO,
         LCTL(LGUI(KC_LEFT)),     KC_DOWN,              LCTL(LGUI(KC_RGHT)),         KC_LSFT,
-        KC_LCTL,                 KC_LSFT,              KC_LALT,                     KC_LWIN
+        TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
     ),
 
     [_UTILITY] = LAYOUT_6x4(
@@ -537,7 +551,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_P,                    KC_F,                  KC_G,                       KC_LCTL,
         KC_LEFT,                 KC_UP,                 KC_RGHT,                   KC_NO,
         KC_T,                    KC_DOWN,               KC_ENT,                     KC_LSFT,
-        KC_LCTL,                 KC_LSFT,               KC_LALT,                    KC_LWIN
+        TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
     ),
 
     [_NUMPAD] = LAYOUT_6x4(
@@ -546,7 +560,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_P7,                   KC_P8,                 KC_P9,                      KC_PPLS,
         KC_P4,                   KC_P5,                 KC_P6,                      KC_NO,
         KC_P1,                   KC_P2,                 KC_P3,                      KC_PENT,
-        KC_NO,                   KC_P0,                 KC_PDOT,                    KC_NO
+        TD(TD_R5C0_NONE_TO_1),   TD(TD_R5C1_P0_TO_2),  TD(TD_R5C2_PDOT_TO_3),      KC_NO
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
@@ -555,6 +569,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         RM_VALU,                 RM_VALD,               RM_NEXT,                    KC_NO,
         RM_SATU,                 RM_SATD,               KC_NO,                      TO(0),
         TO(1),                   TO(2),                 TO(3),                      TO(0),
-        KC_NO,                   KC_NO,                 SAFE_EEPROM_RESET,          SAFE_BOOT
+        TD(TD_R5C0_NONE_TO_1),   TD(TD_R5C1_NONE_TO_2), TD(TD_R5C2_SETTINGS_TO_3), SAFE_BOOT
     )
 };
