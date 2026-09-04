@@ -1,10 +1,5 @@
 #include QMK_KEYBOARD_H
-#include "dynamic_keymap.h"
-#include "eeconfig.h"
 #include "tap_dance_override.h"
-
-#define R3C1_ENTER_MARKER 0xE1
-#define R3C1_ENTER_MARKER_OFFSET (EECONFIG_USER_DATA_SIZE - 1)
 
 static bool circuitcurios_td_is_modifier(tap_dance_dual_role_t *action) {
     return IS_MODIFIER_KEYCODE(action->kc);
@@ -61,27 +56,4 @@ void circuitcurios_td_layer_move_reset(tap_dance_state_t *state, void *user_data
     }
 
     tap_dance_dual_role_reset(state, user_data);
-}
-
-void housekeeping_task_user(void) {
-    static bool checked = false;
-    if (checked || !eeconfig_is_user_datablock_valid()) {
-        return;
-    }
-
-    uint8_t marker = 0;
-    eeconfig_read_user_datablock(&marker, R3C1_ENTER_MARKER_OFFSET, sizeof(marker));
-
-    if (marker != R3C1_ENTER_MARKER) {
-        // R3/C1 on Creative used to be keypad Enter. Only migrate that exact
-        // legacy value; a VIA assignment the user has already changed is kept.
-        if (dynamic_keymap_get_keycode(0, 3, 1) == KC_PENT) {
-            dynamic_keymap_set_keycode(0, 3, 1, KC_ENT);
-        }
-
-        marker = R3C1_ENTER_MARKER;
-        eeconfig_update_user_datablock(&marker, R3C1_ENTER_MARKER_OFFSET, sizeof(marker));
-    }
-
-    checked = true;
 }
