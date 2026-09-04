@@ -1,4 +1,5 @@
 #include QMK_KEYBOARD_H
+#include "dynamic_keymap.h"
 #include "eeconfig.h"
 #include "timer.h"
 #include "via.h"
@@ -9,8 +10,8 @@
 
 enum layer_names {
     _CREATIVE,
+    _UTILITY,
     _NAV,
-    _UTILITY, 
     _NUMPAD,
     _SETTINGS
 };
@@ -74,13 +75,16 @@ typedef struct {
     uint8_t layer_speed[LAYER_COUNT];
 } rgb_ui_config_t;
 
+#define LAYER_ORDER_MARKER 0xA7
+#define LAYER_ORDER_MARKER_OFFSET ((uint16_t)sizeof(rgb_ui_config_t))
+
 static rgb_ui_config_t rgb_cfg = {
-    .layer_hue_a  = {149, 64, 170, 155, 0},
+    .layer_hue_a  = {149, 170, 64, 155, 0},
     .layer_sat_a  = {255, 255, 255, 255, 255},
-    .layer_hue_b  = {190, 170, 210, 96, 160},
+    .layer_hue_b  = {190, 210, 170, 96, 160},
     .layer_sat_b  = {255, 255, 255, 255, 255},
-    .layer_effect = {LFX_DUAL_GRADIENT, LFX_BREATHING, LFX_REACTIVE_SIMPLE, LFX_DUAL_WAVE, LFX_SOLID},
-    .layer_speed  = {32, 24, 64, 40, 32}
+    .layer_effect = {LFX_DUAL_GRADIENT, LFX_REACTIVE_SIMPLE, LFX_BREATHING, LFX_DUAL_WAVE, LFX_SOLID},
+    .layer_speed  = {32, 64, 24, 40, 32}
 };
 
 static uint8_t last_layer = _CREATIVE;
@@ -125,14 +129,14 @@ static void settings_r5c2_tap_dance(tap_dance_state_t *state, void *user_data) {
 }
 
 tap_dance_action_t tap_dance_actions[] = {
-    [TD_BSPC_ESC]          = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC),
-    [TD_R5C0_MOD_TO_1]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_LCTL, _NAV),
-    [TD_R5C1_MOD_TO_2]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_LSFT, _UTILITY),
-    [TD_R5C2_MOD_TO_3]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_LALT, _NUMPAD),
-    [TD_R5C0_NONE_TO_1]    = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _NAV),
-    [TD_R5C1_NONE_TO_2]    = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _UTILITY),
-    [TD_R5C1_P0_TO_2]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_P0, _UTILITY),
-    [TD_R5C2_PDOT_TO_3]    = ACTION_TAP_DANCE_LAYER_MOVE(KC_PDOT, _NUMPAD),
+    [TD_BSPC_ESC]           = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC),
+    [TD_R5C0_MOD_TO_1]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_LCTL, _UTILITY),
+    [TD_R5C1_MOD_TO_2]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_LSFT, _NAV),
+    [TD_R5C2_MOD_TO_3]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_LALT, _NUMPAD),
+    [TD_R5C0_NONE_TO_1]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _UTILITY),
+    [TD_R5C1_NONE_TO_2]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _NAV),
+    [TD_R5C1_P0_TO_2]       = ACTION_TAP_DANCE_LAYER_MOVE(KC_P0, _NAV),
+    [TD_R5C2_PDOT_TO_3]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_PDOT, _NUMPAD),
     [TD_R5C2_SETTINGS_TO_3] = ACTION_TAP_DANCE_FN(settings_r5c2_tap_dance)
 };
 
@@ -180,17 +184,92 @@ static void rgb_ui_save(void) {
     eeconfig_update_user_datablock(&rgb_cfg, 0, sizeof(rgb_cfg));
 }
 
-static void rgb_ui_load(void) {
+static bool rgb_ui_load(void) {
     if (!eeconfig_is_user_datablock_valid()) {
         eeconfig_init_user_datablock();
         rgb_ui_save();
-        return;
+        return true;
     }
 
     eeconfig_read_user_datablock(&rgb_cfg, 0, sizeof(rgb_cfg));
     for (uint8_t i = 0; i < LAYER_COUNT; i++) {
         rgb_cfg.layer_effect[i] = clamp_effect(rgb_cfg.layer_effect[i]);
     }
+    return false;
+}
+
+static uint8_t layer_order_marker_read(void) {
+    uint8_t marker = 0;
+    eeconfig_read_user_datablock(&marker, LAYER_ORDER_MARKER_OFFSET, sizeof(marker));
+    return marker;
+}
+
+static void layer_order_marker_write(void) {
+    uint8_t marker = LAYER_ORDER_MARKER;
+    eeconfig_update_user_datablock(&marker, LAYER_ORDER_MARKER_OFFSET, sizeof(marker));
+}
+
+static void swap_u8(uint8_t *a, uint8_t *b) {
+    uint8_t tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+static void swap_rgb_profiles_1_2(void) {
+    swap_u8(&rgb_cfg.layer_hue_a[1], &rgb_cfg.layer_hue_a[2]);
+    swap_u8(&rgb_cfg.layer_sat_a[1], &rgb_cfg.layer_sat_a[2]);
+    swap_u8(&rgb_cfg.layer_hue_b[1], &rgb_cfg.layer_hue_b[2]);
+    swap_u8(&rgb_cfg.layer_sat_b[1], &rgb_cfg.layer_sat_b[2]);
+    swap_u8(&rgb_cfg.layer_effect[1], &rgb_cfg.layer_effect[2]);
+    swap_u8(&rgb_cfg.layer_speed[1], &rgb_cfg.layer_speed[2]);
+}
+
+static void install_layer_selector_tap_dances(void) {
+    dynamic_keymap_set_keycode(_CREATIVE, 5, 0, TD(TD_R5C0_MOD_TO_1));
+    dynamic_keymap_set_keycode(_CREATIVE, 5, 1, TD(TD_R5C1_MOD_TO_2));
+    dynamic_keymap_set_keycode(_CREATIVE, 5, 2, TD(TD_R5C2_MOD_TO_3));
+
+    dynamic_keymap_set_keycode(_UTILITY, 5, 0, TD(TD_R5C0_MOD_TO_1));
+    dynamic_keymap_set_keycode(_UTILITY, 5, 1, TD(TD_R5C1_MOD_TO_2));
+    dynamic_keymap_set_keycode(_UTILITY, 5, 2, TD(TD_R5C2_MOD_TO_3));
+
+    dynamic_keymap_set_keycode(_NAV, 5, 0, TD(TD_R5C0_MOD_TO_1));
+    dynamic_keymap_set_keycode(_NAV, 5, 1, TD(TD_R5C1_MOD_TO_2));
+    dynamic_keymap_set_keycode(_NAV, 5, 2, TD(TD_R5C2_MOD_TO_3));
+
+    dynamic_keymap_set_keycode(_NUMPAD, 5, 0, TD(TD_R5C0_NONE_TO_1));
+    dynamic_keymap_set_keycode(_NUMPAD, 5, 1, TD(TD_R5C1_P0_TO_2));
+    dynamic_keymap_set_keycode(_NUMPAD, 5, 2, TD(TD_R5C2_PDOT_TO_3));
+
+    dynamic_keymap_set_keycode(_SETTINGS, 5, 0, TD(TD_R5C0_NONE_TO_1));
+    dynamic_keymap_set_keycode(_SETTINGS, 5, 1, TD(TD_R5C1_NONE_TO_2));
+    dynamic_keymap_set_keycode(_SETTINGS, 5, 2, TD(TD_R5C2_SETTINGS_TO_3));
+}
+
+static void migrate_layer_order_if_needed(bool fresh_user_data) {
+    if (fresh_user_data) {
+        install_layer_selector_tap_dances();
+        layer_order_marker_write();
+        return;
+    }
+
+    if (layer_order_marker_read() == LAYER_ORDER_MARKER) {
+        return;
+    }
+
+    for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
+        for (uint8_t col = 0; col < MATRIX_COLS; col++) {
+            uint16_t layer_1_keycode = dynamic_keymap_get_keycode(1, row, col);
+            uint16_t layer_2_keycode = dynamic_keymap_get_keycode(2, row, col);
+            dynamic_keymap_set_keycode(1, row, col, layer_2_keycode);
+            dynamic_keymap_set_keycode(2, row, col, layer_1_keycode);
+        }
+    }
+
+    swap_rgb_profiles_1_2();
+    rgb_ui_save();
+    install_layer_selector_tap_dances();
+    layer_order_marker_write();
 }
 
 static uint8_t qmk_mode_for_effect(uint8_t effect) {
@@ -267,7 +346,8 @@ void keyboard_post_init_user(void) {
 #endif
 
     positional_rgb_reset_state();
-    rgb_ui_load();
+    bool fresh_user_data = rgb_ui_load();
+    migrate_layer_order_if_needed(fresh_user_data);
     last_layer = clamp_layer(get_highest_layer(layer_state | default_layer_state));
     apply_layer_profile(last_layer);
 }
@@ -536,21 +616,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
     ),
 
+    [_UTILITY] = LAYOUT_6x4(
+        KC_NO,                   TO(0),                 MO(4),                      KC_ESC,
+        KC_K,                    KC_R,                  KC_E,                       MS_BTN1,
+        KC_P,                    KC_F,                  KC_G,                       KC_LCTL,
+        KC_LEFT,                 KC_UP,                 KC_RGHT,                    KC_NO,
+        KC_T,                    KC_DOWN,               KC_ENT,                     KC_LSFT,
+        TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
+    ),
+
     [_NAV] = LAYOUT_6x4(
         KC_NO,                   TO(0),                MO(4),                       KC_NO,
         KC_PAGE_UP,              KC_NO,                KC_PAGE_DOWN,                KC_NO,
         LALT(KC_TAB),            KC_UP,                KC_NO,                       KC_LCTL,
         KC_LEFT,                 KC_NO,                KC_RGHT,                     KC_NO,
         LCTL(LGUI(KC_LEFT)),     KC_DOWN,              LCTL(LGUI(KC_RGHT)),         KC_LSFT,
-        TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
-    ),
-
-    [_UTILITY] = LAYOUT_6x4(
-        KC_NO,                   TO(0),                 MO(4),                      KC_ESC,
-        KC_K,                    KC_R,                  KC_E,                       MS_BTN1,
-        KC_P,                    KC_F,                  KC_G,                       KC_LCTL,
-        KC_LEFT,                 KC_UP,                 KC_RGHT,                   KC_NO,
-        KC_T,                    KC_DOWN,               KC_ENT,                     KC_LSFT,
         TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
     ),
 
