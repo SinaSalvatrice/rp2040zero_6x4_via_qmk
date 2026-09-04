@@ -21,11 +21,29 @@ enum custom_keycodes {
 };
 
 enum tap_dance_codes {
-    TD_BSPC_ESC
+    TD_BSPC_ESC,
+    TD_LAYER_SELECT
 };
 
+static void layer_select_tap_dance(tap_dance_state_t *state, void *user_data) {
+    (void)user_data;
+
+    switch (state->count) {
+        case 1:
+            layer_move(_NAV);
+            break;
+        case 2:
+            layer_move(_UTILITY);
+            break;
+        default:
+            layer_move(_NUMPAD);
+            break;
+    }
+}
+
 tap_dance_action_t tap_dance_actions[] = {
-    [TD_BSPC_ESC] = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC)
+    [TD_BSPC_ESC] = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC),
+    [TD_LAYER_SELECT] = ACTION_TAP_DANCE_FN(layer_select_tap_dance)
 };
 
 enum via_rgb_ui_value {
