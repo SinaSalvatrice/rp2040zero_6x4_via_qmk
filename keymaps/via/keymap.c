@@ -10,7 +10,7 @@
 enum layer_names {
     _CREATIVE,
     _NAV,
-    _GRAPHICS, 
+    _UTILITY, 
     _NUMPAD,
     _SETTINGS
 };
@@ -224,7 +224,7 @@ static void apply_layer_profile(uint8_t layer) {
 }
 
 static void handle_encoder_button_tap(void) {
-    if (last_layer == _GRAPHICS) {
+    if (last_layer == _UTILITY) {
         tap_code(KC_Q);
     }
 }
@@ -496,47 +496,47 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_CREATIVE] = LAYOUT_6x4(
-        KC_NO,          TO(0),      MO(4),      TD(TD_BSPC_ESC),
-        KC_S,           KC_C,       KC_V,       KC_Z,
-        KC_B,           KC_N,       KC_X,       KC_LCTL,
-        KC_LEFT,        KC_UP,      KC_RIGHT,   KC_NO,
-        KC_A,           KC_DOWN,    KC_ENT,     KC_LSFT,
-        KC_NO,          KC_LALT,    KC_SPACE,   KC_NO
+        KC_NO,                   TO(0),                MO(4),                       TD(TD_BSPC_ESC),
+        KC_S,                    KC_B,                 KC_N,                        KC_X,
+        KC_Z,                    KC_UP,                KC_Y,                        KC_A,
+        KC_LEFT,                 KC_PENT,              KC_RGHT,                     KC_C,
+        KC_T,                    KC_DOWN,              KC_M,                        KC_V,
+        KC_LCTL,                 KC_LSFT,              KC_LALT,                     KC_LWIN
     ),
 
     [_NAV] = LAYOUT_6x4(
-        KC_NO,                   TO(0),                MO(4),                    KC_NO,
-        KC_NO,                   KC_NO,                KC_NO,                    KC_NO,
-        KC_NO,                   KC_NO,                KC_NO,                    KC_LCTL,
-        LALT(LCTL(KC_LEFT)),     KC_NO,                LALT(LCTL(KC_RGHT)),      KC_NO,
-        LCTL(LGUI(KC_LEFT)),     KC_NO,                LCTL(LGUI(KC_RGHT)),      KC_LSFT,
-        KC_NO,                   KC_LALT,              LCTL(LALT(KC_DEL)),       KC_NO
+        KC_NO,                   TO(0),                MO(4),                       KC_NO,
+        KC_PAGE_UP,              KC_NO,                KC_PAGE_DOWN,                KC_NO,
+        LALT(KC_TAB),            KC_UP,                KC_NO,                       KC_LCTL,
+        KC_LEFT,                 KC_NO,                KC_RGHT,                     KC_NO,
+        LCTL(LGUI(KC_LEFT)),     KC_DOWN,              LCTL(LGUI(KC_RGHT)),         KC_LSFT,
+        KC_LCTL,                 KC_LSFT,              KC_LALT,                     KC_LWIN
     ),
 
-    [_GRAPHICS] = LAYOUT_6x4(
-        KC_NO,          TO(0),      MO(4),      KC_ESC,
-        KC_K,           KC_R,       KC_E,       MS_BTN1,
-        KC_P,           KC_F,       KC_G,       KC_LCTL,
-        KC_LEFT,        KC_UP,      KC_RIGHT,   KC_NO,
-        KC_T,           KC_DOWN,    KC_ENT,     KC_LSFT,
-        KC_NO,          KC_LALT,    KC_SPACE,   KC_NO
+    [_UTILITY] = LAYOUT_6x4(
+        KC_NO,                   TO(0),                 MO(4),                      KC_ESC,
+        KC_K,                    KC_R,                  KC_E,                       MS_BTN1,
+        KC_P,                    KC_F,                  KC_G,                       KC_LCTL,
+        KC_LEFT,                 KC_UP,                 KC_RGHT,                   KC_NO,
+        KC_T,                    KC_DOWN,               KC_ENT,                     KC_LSFT,
+        KC_LCTL,                 KC_LSFT,               KC_LALT,                    KC_LWIN
     ),
 
     [_NUMPAD] = LAYOUT_6x4(
-        KC_NO,          TO(0),          MO(4),          KC_BSPC,
-        KC_NUM,         KC_PAST,        KC_PSLS,        KC_PMNS,
-        KC_P7,          KC_P8,          KC_P9,          KC_PPLS,
-        KC_P4,          KC_P5,          KC_P6,          KC_NO,
-        KC_P1,          KC_P2,          KC_P3,          KC_PENT,
-        KC_NO,          KC_P0,          KC_PDOT,        KC_NO
+        KC_NO,                   TO(0),                 MO(4),                      KC_BSPC,
+        KC_NUM,                  KC_PAST,               KC_PSLS,                    KC_PMNS,
+        KC_P7,                   KC_P8,                 KC_P9,                      KC_PPLS,
+        KC_P4,                   KC_P5,                 KC_P6,                      KC_NO,
+        KC_P1,                   KC_P2,                 KC_P3,                      KC_PENT,
+        KC_NO,                   KC_P0,                 KC_PDOT,                    KC_NO
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
-        KC_NO,          TO(0),      MO(4),      RM_PREV,
-        RM_SPDU,        RM_SPDD,    RM_HUEU,    RM_HUED,
-        RM_VALU,        RM_VALD,    RM_NEXT,    KC_NO,
-        RM_SATU,        RM_SATD,    KC_NO,      TO(0),
-        TO(1),          TO(2),      TO(3),      TO(0),
-        KC_NO,          KC_NO,      SAFE_EEPROM_RESET, SAFE_BOOT
+        KC_NO,                   TO(0),                 MO(4),                      RM_PREV,
+        RM_SPDU,                 RM_SPDD,               RM_HUEU,                    RM_HUED,
+        RM_VALU,                 RM_VALD,               RM_NEXT,                    KC_NO,
+        RM_SATU,                 RM_SATD,               KC_NO,                      TO(0),
+        TO(1),                   TO(2),                 TO(3),                      TO(0),
+        KC_NO,                   KC_NO,                 SAFE_EEPROM_RESET,          SAFE_BOOT
     )
 };
