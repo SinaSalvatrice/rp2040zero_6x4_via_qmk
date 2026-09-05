@@ -17,8 +17,7 @@ enum layer_names {
 };
 
 enum custom_keycodes {
-    SAFE_BOOT = SAFE_RANGE,
-    SAFE_EEPROM_RESET
+    SAFE_EEPROM_RESET = SAFE_RANGE
 };
 
 enum tap_dance_codes {
@@ -77,6 +76,8 @@ typedef struct {
 
 #define LAYER_ORDER_MARKER 0xA7
 #define LAYER_ORDER_MARKER_OFFSET ((uint16_t)sizeof(rgb_ui_config_t))
+#define ENCODER_MATRIX_MARKER 0xE1
+#define ENCODER_MATRIX_MARKER_OFFSET (LAYER_ORDER_MARKER_OFFSET + 1U)
 
 static rgb_ui_config_t rgb_cfg = {
     .layer_hue_a  = {149, 170, 64, 155, 0},
@@ -88,9 +89,6 @@ static rgb_ui_config_t rgb_cfg = {
 };
 
 static uint8_t last_layer = _CREATIVE;
-static bool encoder_btn_pressed = false;
-static bool encoder_btn_consumed = false;
-static uint16_t encoder_btn_tmr = 0;
 
 static uint8_t clamp_layer(uint8_t layer) {
     return layer < LAYER_COUNT ? layer : _CREATIVE;
@@ -104,30 +102,6 @@ static bool is_dual_effect(uint8_t effect) {
     return effect >= LFX_DUAL_GRADIENT && effect <= LFX_DUAL_WAVE;
 }
 
-static bool encoder_button_is_pressed(void) {
-#ifdef ENCODER_BTN_PIN
-    return !gpio_read_pin(ENCODER_BTN_PIN);
-#else
-    return false;
-#endif
-}
-
-static void settings_r5c2_tap_dance(tap_dance_state_t *state, void *user_data) {
-    (void)user_data;
-
-    if (state->count >= 2) {
-        layer_move(_NUMPAD);
-        return;
-    }
-
-    if (encoder_button_is_pressed()) {
-        encoder_btn_consumed = true;
-        eeconfig_init();
-        eeconfig_init_via();
-        reset_keyboard();
-    }
-}
-
 tap_dance_action_t tap_dance_actions[] = {
     [TD_BSPC_ESC]           = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC),
     [TD_R5C0_MOD_TO_1]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_LCTL, _UTILITY),
@@ -137,7 +111,7 @@ tap_dance_action_t tap_dance_actions[] = {
     [TD_R5C1_NONE_TO_2]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _NAV),
     [TD_R5C1_P0_TO_2]       = ACTION_TAP_DANCE_LAYER_MOVE(KC_P0, _NAV),
     [TD_R5C2_PDOT_TO_3]     = ACTION_TAP_DANCE_LAYER_MOVE(KC_PDOT, _NUMPAD),
-    [TD_R5C2_SETTINGS_TO_3] = ACTION_TAP_DANCE_FN(settings_r5c2_tap_dance)
+    [TD_R5C2_SETTINGS_TO_3] = ACTION_TAP_DANCE_LAYER_MOVE(KC_NO, _NUMPAD)
 };
 
 static uint8_t triangle8(uint8_t value) {
@@ -209,6 +183,17 @@ static void layer_order_marker_write(void) {
     eeconfig_update_user_datablock(&marker, LAYER_ORDER_MARKER_OFFSET, sizeof(marker));
 }
 
+static uint8_t encoder_matrix_marker_read(void) {
+    uint8_t marker = 0;
+    eeconfig_read_user_datablock(&marker, ENCODER_MATRIX_MARKER_OFFSET, sizeof(marker));
+    return marker;
+}
+
+static void encoder_matrix_marker_write(void) {
+    uint8_t marker = ENCODER_MATRIX_MARKER;
+    eeconfig_update_user_datablock(&marker, ENCODER_MATRIX_MARKER_OFFSET, sizeof(marker));
+}
+
 static void swap_u8(uint8_t *a, uint8_t *b) {
     uint8_t tmp = *a;
     *a = *b;
@@ -270,6 +255,24 @@ static void migrate_layer_order_if_needed(bool fresh_user_data) {
     rgb_ui_save();
     install_layer_selector_tap_dances();
     layer_order_marker_write();
+}
+
+static void install_encoder_matrix_keycodes(void) {
+    dynamic_keymap_set_keycode(_CREATIVE, 0, 0, KC_NO);
+    dynamic_keymap_set_keycode(_UTILITY, 0, 0, KC_Q);
+    dynamic_keymap_set_keycode(_NAV, 0, 0, KC_NO);
+    dynamic_keymap_set_keycode(_NUMPAD, 0, 0, KC_NO);
+    dynamic_keymap_set_keycode(_SETTINGS, 0, 0, SAFE_EEPROM_RESET);
+    dynamic_keymap_set_keycode(_SETTINGS, 5, 3, QK_BOOT);
+}
+
+static void migrate_encoder_button_to_matrix_if_needed(bool fresh_user_data) {
+    if (!fresh_user_data && encoder_matrix_marker_read() == ENCODER_MATRIX_MARKER) {
+        return;
+    }
+
+    install_encoder_matrix_keycodes();
+    encoder_matrix_marker_write();
 }
 
 static uint8_t qmk_mode_for_effect(uint8_t effect) {
@@ -334,20 +337,11 @@ static void apply_layer_profile(uint8_t layer) {
     }
 }
 
-static void handle_encoder_button_tap(void) {
-    if (last_layer == _UTILITY) {
-        tap_code(KC_Q);
-    }
-}
-
 void keyboard_post_init_user(void) {
-#ifdef ENCODER_BTN_PIN
-    gpio_set_pin_input_high(ENCODER_BTN_PIN);
-#endif
-
     positional_rgb_reset_state();
     bool fresh_user_data = rgb_ui_load();
     migrate_layer_order_if_needed(fresh_user_data);
+    migrate_encoder_button_to_matrix_if_needed(fresh_user_data);
     last_layer = clamp_layer(get_highest_layer(layer_state | default_layer_state));
     apply_layer_profile(last_layer);
 }
@@ -356,26 +350,6 @@ void matrix_scan_user(void) {
     if (!rgb_matrix_is_enabled()) {
         rgb_matrix_enable_noeeprom();
     }
-
-#ifdef ENCODER_BTN_PIN
-    if (timer_elapsed(encoder_btn_tmr) < 10) {
-        return;
-    }
-
-    bool pressed = encoder_button_is_pressed();
-    if (pressed == encoder_btn_pressed) {
-        return;
-    }
-
-    encoder_btn_tmr = timer_read();
-    encoder_btn_pressed = pressed;
-
-    if (pressed) {
-        encoder_btn_consumed = false;
-    } else if (!encoder_btn_consumed) {
-        handle_encoder_button_tap();
-    }
-#endif
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
@@ -417,20 +391,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case RM_TOGG:
             return false;
         case SAFE_EEPROM_RESET:
-            if (encoder_button_is_pressed()) {
-                encoder_btn_consumed = true;
-                // Reset both QMK's persistent settings and VIA's separate
-                // dynamic-keymap/macro storage, then reload the keymap from flash.
-                eeconfig_init();
-                eeconfig_init_via();
-                reset_keyboard();
-            }
-            return false;
-        case SAFE_BOOT:
-            if (encoder_button_is_pressed()) {
-                encoder_btn_consumed = true;
-                reset_keyboard();
-            }
+            // Reset both QMK's persistent settings and VIA's separate
+            // dynamic-keymap/macro storage, then reload the keymap from flash.
+            eeconfig_init();
+            eeconfig_init_via();
+            reset_keyboard();
             return false;
         default:
             return true;
@@ -617,7 +582,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_UTILITY] = LAYOUT_6x4(
-        KC_NO,                   TO(0),                 MO(4),                      KC_ESC,
+        KC_Q,                    TO(0),                 MO(4),                      KC_ESC,
         KC_K,                    KC_R,                  KC_E,                       MS_BTN1,
         KC_P,                    KC_F,                  KC_G,                       KC_LCTL,
         KC_LEFT,                 KC_UP,                 KC_RGHT,                    KC_NO,
@@ -644,11 +609,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
     [_SETTINGS] = LAYOUT_6x4(
-        KC_NO,                   TO(0),                 MO(4),                      RM_PREV,
+        SAFE_EEPROM_RESET,       TO(0),                 MO(4),                      RM_PREV,
         RM_SPDU,                 RM_SPDD,               RM_HUEU,                    RM_HUED,
         RM_VALU,                 RM_VALD,               RM_NEXT,                    KC_NO,
         RM_SATU,                 RM_SATD,               KC_NO,                      TO(0),
         TO(1),                   TO(2),                 TO(3),                      TO(0),
-        TD(TD_R5C0_NONE_TO_1),   TD(TD_R5C1_NONE_TO_2), TD(TD_R5C2_SETTINGS_TO_3), SAFE_BOOT
+        TD(TD_R5C0_NONE_TO_1),   TD(TD_R5C1_NONE_TO_2), TD(TD_R5C2_SETTINGS_TO_3), QK_BOOT
     )
 };
