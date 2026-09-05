@@ -1,7 +1,5 @@
 #pragma once
 
-#define ENCODER_BTN_PIN GP10
-
 // RGB Matrix defaults. WS2812 pin and LED layout live in keyboard.json.
 #define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120
 #define RGB_MATRIX_DEFAULT_HUE 149
