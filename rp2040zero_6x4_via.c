@@ -1,27 +1,9 @@
 #include QMK_KEYBOARD_H
-#include "bootloader.h"
-#include "wait.h"
 
 #ifdef VIA_ENABLE
 #    include "via.h"
 #    include "dynamic_keymap.h"
 #endif
-
-void keyboard_pre_init_kb(void) {
-#ifdef ENCODER_BTN_PIN
-    // Keymap-independent recovery path: hold the encoder button while the
-    // keyboard powers up to enter the RP2040 bootloader. This runs before VIA,
-    // the dynamic keymap, layers, or RGB profiles are initialized.
-    gpio_set_pin_input_high(ENCODER_BTN_PIN);
-    wait_ms(20);
-
-    if (!gpio_read_pin(ENCODER_BTN_PIN)) {
-        bootloader_jump();
-    }
-#endif
-
-    keyboard_pre_init_user();
-}
 
 #ifdef VIA_ENABLE
 static bool via_key_is_locked(uint8_t layer, uint8_t row, uint8_t column) {
@@ -88,8 +70,8 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
 #endif
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
-    // Keep the keymap-level processing (including positional RGB and the
-    // protected recovery keycodes) in the normal QMK chain.
+    // Keep the keymap-level processing, including positional RGB and keymap
+    // actions, in the normal QMK chain.
     if (!process_record_user(keycode, record)) {
         return false;
     }
