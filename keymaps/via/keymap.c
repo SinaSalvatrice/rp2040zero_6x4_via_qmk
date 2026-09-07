@@ -22,6 +22,9 @@ enum custom_keycodes {
 
 enum tap_dance_codes {
     TD_BSPC_ESC,
+    TD_A_WIN_H,
+    TD_C_WIN_E,
+    TD_V_WIN_D,
     TD_R5C0_MOD_TO_1,
     TD_R5C1_MOD_TO_2,
     TD_R5C2_MOD_TO_3,
@@ -76,7 +79,7 @@ typedef struct {
 
 #define LAYER_ORDER_MARKER 0xA7
 #define LAYER_ORDER_MARKER_OFFSET ((uint16_t)sizeof(rgb_ui_config_t))
-#define ENCODER_MATRIX_MARKER 0xE1
+#define ENCODER_MATRIX_MARKER 0xE2
 #define ENCODER_MATRIX_MARKER_OFFSET (LAYER_ORDER_MARKER_OFFSET + 1U)
 
 static rgb_ui_config_t rgb_cfg = {
@@ -104,6 +107,9 @@ static bool is_dual_effect(uint8_t effect) {
 
 tap_dance_action_t tap_dance_actions[] = {
     [TD_BSPC_ESC]           = ACTION_TAP_DANCE_DOUBLE(KC_BSPC, KC_ESC),
+    [TD_A_WIN_H]            = ACTION_TAP_DANCE_DOUBLE(KC_A, LGUI(KC_H)),
+    [TD_C_WIN_E]            = ACTION_TAP_DANCE_DOUBLE(KC_C, LGUI(KC_E)),
+    [TD_V_WIN_D]            = ACTION_TAP_DANCE_DOUBLE(KC_V, LGUI(KC_D)),
     [TD_R5C0_MOD_TO_1]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_LCTL, _UTILITY),
     [TD_R5C1_MOD_TO_2]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_LSFT, _NAV),
     [TD_R5C2_MOD_TO_3]      = ACTION_TAP_DANCE_LAYER_MOVE(KC_LALT, _NUMPAD),
@@ -264,6 +270,10 @@ static void install_encoder_matrix_keycodes(void) {
     dynamic_keymap_set_keycode(_NUMPAD, 0, 0, KC_NO);
     dynamic_keymap_set_keycode(_SETTINGS, 0, 0, SAFE_EEPROM_RESET);
     dynamic_keymap_set_keycode(_SETTINGS, 5, 3, QK_BOOT);
+
+    dynamic_keymap_set_keycode(_CREATIVE, 2, 3, TD(TD_A_WIN_H));
+    dynamic_keymap_set_keycode(_CREATIVE, 3, 3, TD(TD_C_WIN_E));
+    dynamic_keymap_set_keycode(_CREATIVE, 4, 3, TD(TD_V_WIN_D));
 }
 
 static void migrate_encoder_button_to_matrix_if_needed(bool fresh_user_data) {
@@ -575,9 +585,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_CREATIVE] = LAYOUT_6x4(
         KC_NO,                   TO(0),                MO(4),                       TD(TD_BSPC_ESC),
         KC_S,                    KC_B,                 KC_N,                        KC_X,
-        KC_Z,                    KC_UP,                KC_Y,                        KC_A,
-        KC_LEFT,                 KC_PENT,              KC_RGHT,                     KC_C,
-        KC_T,                    KC_DOWN,              KC_M,                        KC_V,
+        KC_Z,                    KC_UP,                KC_Y,                        TD(TD_A_WIN_H),
+        KC_LEFT,                 KC_PENT,              KC_RGHT,                     TD(TD_C_WIN_E),
+        KC_T,                    KC_DOWN,              KC_M,                        TD(TD_V_WIN_D),
         TD(TD_R5C0_MOD_TO_1),    TD(TD_R5C1_MOD_TO_2), TD(TD_R5C2_MOD_TO_3),        KC_LWIN
     ),
 
