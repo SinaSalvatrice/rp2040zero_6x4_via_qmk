@@ -20,9 +20,13 @@
 // VIA custom layer-lighting UI + persistent settings.
 // Each of the five layers stores two independently selectable colors,
 // an effect and its speed.
-#define VIA_FIRMWARE_VERSION 9
+#define VIA_FIRMWARE_VERSION 10
 #define EECONFIG_USER_DATA_SIZE 32
 #define EECONFIG_USER_DATA_VERSION 5
+
+// Keep the existing VIA keymap/macro addresses stable and reserve only the
+// final 32 EEPROM bytes for persistent editable tap-dance pairs.
+#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR (TOTAL_EEPROM_BYTE_COUNT - 33)
 
 #define USB_SUSPEND_WAKEUP_DELAY 0
 #define DEBOUNCE 5
