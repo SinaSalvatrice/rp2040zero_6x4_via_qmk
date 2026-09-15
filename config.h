@@ -20,14 +20,14 @@
 // VIA custom layer-lighting UI + persistent settings.
 // Each of the five layers stores two independently selectable colors,
 // an effect and its speed.
-#define VIA_FIRMWARE_VERSION 12
+#define VIA_FIRMWARE_VERSION 13
 #define EECONFIG_USER_DATA_SIZE 32
 #define EECONFIG_USER_DATA_VERSION 5
 
 // RP2040 flash wear-leveling exposes 4096 logical EEPROM bytes. Keep the
-// existing VIA keymap/macro addresses stable and reserve bytes 4064..4095
-// for the coordinate-based tap-dance configuration.
-#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 4063
+// existing VIA keymap/macro addresses stable and reserve bytes 4044..4095
+// for full 16-bit per-position tap-dance keycodes.
+#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 4043
 
 #define USB_SUSPEND_WAKEUP_DELAY 0
 #define DEBOUNCE 5
