@@ -1,5 +1,6 @@
 #include QMK_KEYBOARD_H
 
+#include "dynamic_keymap.h"
 #include "eeprom.h"
 #include "sendstring_german.h"
 #include "timer.h"
@@ -8,29 +9,26 @@
 #define TAP_DANCE_VIA_CHANNEL 6
 #define TAP_DANCE_VALUE_SINGLE 1
 #define TAP_DANCE_VALUE_DOUBLE 2
-#define EDITABLE_TAP_DANCE_COUNT 4
-#define TAP_DANCE_CONFIG_MAGIC 0x54445031UL
+#define EDITABLE_TAP_DANCE_COUNT 3
+#define TAP_DANCE_CONFIG_MAGIC 0x54445032UL
 #define TAP_DANCE_CONFIG_RESERVED_SIZE 32U
 #define TAP_DANCE_CONFIG_EEPROM_ADDR (DYNAMIC_KEYMAP_EEPROM_MAX_ADDR + 1U)
 #define TAP_DANCE_ALIAS_FIRST QK_KB_8
-#define TAP_DANCE_ALIAS_LAST QK_KB_11
+#define TAP_DANCE_ALIAS_LAST QK_KB_10
 #define TAP_DANCE_C_SLOT 2
 
 #ifndef TAPPING_TERM
 #    define TAPPING_TERM 200
 #endif
 
-// These are the first four tap-dance entries in keymaps/via/keymap.c.
-// The same four actions are also exposed as VIA custom keycodes TD1..TD4,
-// so a slot can be placed on any editable matrix position without changing
-// the actual tap-dance action indexes.
-static const uint8_t editable_tap_dance_action_index[EDITABLE_TAP_DANCE_COUNT] = {0, 1, 2, 3};
+// These are the first three tap-dance entries in keymaps/via/keymap.c.
+// The same three actions are exposed as VIA custom keycodes TD1..TD3.
+static const uint8_t editable_tap_dance_action_index[EDITABLE_TAP_DANCE_COUNT] = {0, 1, 2};
 
 static const tap_dance_pair_t editable_tap_dance_defaults[EDITABLE_TAP_DANCE_COUNT] = {
-    {KC_BSPC, KC_ESC},
-    {KC_A, LGUI(KC_D)},
+    {KC_S, LGUI(LSFT(KC_S))},
+    {KC_Z, LGUI(KC_V)},
     {KC_C, LGUI(KC_E)},
-    {KC_V, LGUI(KC_H)},
 };
 
 typedef struct {
@@ -128,7 +126,7 @@ static void tap_dance_alias_finish_single(bool keep_held) {
 
 static bool tap_dance_alias_open_circuitcurios_repo(uint8_t slot, const tap_dance_pair_t *pair) {
     // TD3 is the C key. If its VIA-configured double tap is still Explorer,
-    // make that Explorer action useful by opening the CircuitCurios repo directly.
+    // open the CircuitCurios repo directly instead of Explorer's default page.
     if (slot != TAP_DANCE_C_SLOT || pair == NULL || pair->kc2 != LGUI(KC_E)) {
         return false;
     }
@@ -173,6 +171,18 @@ static void tap_dance_editor_load(void) {
     }
 
     tap_dance_editor_apply_pairs(storage.pairs);
+}
+
+static void tap_dance_editor_install_matrix_positions(void) {
+    // Keep exactly the three shortcut tap dances requested on Creative.
+    // Existing VIA EEPROM assignments are corrected at every boot, while the
+    // firmware-protected R5 layer-selector tap dances remain untouched.
+    dynamic_keymap_set_keycode(0, 0, 3, KC_BSPC);
+    dynamic_keymap_set_keycode(0, 1, 0, QK_KB_8);
+    dynamic_keymap_set_keycode(0, 2, 0, QK_KB_9);
+    dynamic_keymap_set_keycode(0, 2, 3, KC_A);
+    dynamic_keymap_set_keycode(0, 3, 3, QK_KB_10);
+    dynamic_keymap_set_keycode(0, 4, 3, KC_V);
 }
 
 static void tap_dance_editor_set_value(uint8_t *data) {
@@ -259,7 +269,7 @@ void tap_dance_editor_pre_process(uint16_t keycode, keyrecord_t *record) {
     tap_dance_alias_finish_single(alias_state.pressed);
 }
 
-// Handle the VIA-visible TD1..TD4 aliases (QK_KB_8..QK_KB_11). This mirrors
+// Handle the VIA-visible TD1..TD3 aliases (QK_KB_8..QK_KB_10). This mirrors
 // ACTION_TAP_DANCE_DOUBLE closely enough to preserve single-vs-double behavior,
 // while making the slot itself assignable through VIA's normal Custom palette.
 bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record) {
@@ -367,4 +377,5 @@ void via_custom_value_command(uint8_t *data, uint8_t length) {
 void keyboard_post_init_kb(void) {
     tap_dance_editor_load();
     keyboard_post_init_user();
+    tap_dance_editor_install_matrix_positions();
 }
