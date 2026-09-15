@@ -1,6 +1,7 @@
 #include QMK_KEYBOARD_H
 
 #include "eeprom.h"
+#include "sendstring_german.h"
 #include "timer.h"
 #include "via.h"
 
@@ -13,6 +14,7 @@
 #define TAP_DANCE_CONFIG_EEPROM_ADDR (DYNAMIC_KEYMAP_EEPROM_MAX_ADDR + 1U)
 #define TAP_DANCE_ALIAS_FIRST QK_KB_8
 #define TAP_DANCE_ALIAS_LAST QK_KB_11
+#define TAP_DANCE_C_SLOT 2
 
 #ifndef TAPPING_TERM
 #    define TAPPING_TERM 200
@@ -122,6 +124,20 @@ static void tap_dance_alias_finish_single(bool keep_held) {
         tap_code16(pair->kc1);
         tap_dance_alias_clear();
     }
+}
+
+static bool tap_dance_alias_open_circuitcurios_repo(uint8_t slot, const tap_dance_pair_t *pair) {
+    // TD3 is the C key. If its VIA-configured double tap is still Explorer,
+    // make that Explorer action useful by opening the CircuitCurios repo directly.
+    if (slot != TAP_DANCE_C_SLOT || pair == NULL || pair->kc2 != LGUI(KC_E)) {
+        return false;
+    }
+
+    tap_code16(LGUI(KC_R));
+    wait_ms(250);
+    SEND_STRING("C:\\GitHub\\CircuitCurios-brand-system");
+    tap_code(KC_ENT);
+    return true;
 }
 
 static void tap_dance_editor_apply_pairs(const tap_dance_pair_t *pairs) {
@@ -263,9 +279,13 @@ bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record) {
             } else {
                 tap_dance_pair_t *pair = editable_tap_dance_pair(slot);
                 if (pair != NULL) {
-                    register_code16(pair->kc2);
-                    alias_state.stage = TD_ALIAS_DOUBLE_HELD;
-                    alias_state.pressed = true;
+                    if (tap_dance_alias_open_circuitcurios_repo(slot, pair)) {
+                        tap_dance_alias_clear();
+                    } else {
+                        register_code16(pair->kc2);
+                        alias_state.stage = TD_ALIAS_DOUBLE_HELD;
+                        alias_state.pressed = true;
+                    }
                 } else {
                     tap_dance_alias_clear();
                 }
