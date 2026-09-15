@@ -24,9 +24,10 @@
 #define EECONFIG_USER_DATA_SIZE 32
 #define EECONFIG_USER_DATA_VERSION 5
 
-// Keep the existing VIA keymap/macro addresses stable and reserve only the
-// final 32 EEPROM bytes for persistent editable tap-dance pairs.
-#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR (TOTAL_EEPROM_BYTE_COUNT - 33)
+// RP2040 flash wear-leveling exposes 4096 logical EEPROM bytes. Keep the
+// existing VIA keymap/macro addresses stable and reserve only bytes 4064..4095
+// for persistent editable tap-dance pairs.
+#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 4063
 
 #define USB_SUSPEND_WAKEUP_DELAY 0
 #define DEBOUNCE 5
