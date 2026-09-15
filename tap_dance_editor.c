@@ -7,41 +7,45 @@
 #include "via.h"
 
 #define TAP_DANCE_VIA_CHANNEL 6
-#define TAP_DANCE_VALUE_POSITION 1
 #define TAP_DANCE_VALUE_SINGLE 2
-#define TAP_DANCE_VALUE_ACTION 3
-#define TAP_DANCE_VALUE_CUSTOM_ACTION 4
+#define TAP_DANCE_VALUE_DOUBLE 3
 
-#define TAP_DANCE_CONFIG_RESERVED_SIZE 32U
+#define TAP_DANCE_CONFIG_MAGIC 0x54444B31UL
+#define TAP_DANCE_CONFIG_RESERVED_SIZE 52U
 #define TAP_DANCE_CONFIG_EEPROM_ADDR (DYNAMIC_KEYMAP_EEPROM_MAX_ADDR + 1U)
-#define TAP_DANCE_CUSTOM_ACTION_COUNT 4
+#define TAP_DANCE_OLD_CONFIG_EEPROM_ADDR 4064U
 #define TAP_DANCE_BASE_LAYER 0
 
 #ifndef TAPPING_TERM
 #    define TAPPING_TERM 200
 #endif
 
-enum tap_dance_action_id {
-    TD_ACTION_NONE = 0,
-    TD_ACTION_SCREENSHOT,
-    TD_ACTION_CLIPBOARD,
-    TD_ACTION_TASK_MANAGER,
-    TD_ACTION_EXPLORER,
-    TD_ACTION_RUN,
-    TD_ACTION_CLOSE_WINDOW,
-    TD_ACTION_DESKTOP,
-    TD_ACTION_SCREEN_RECORD,
-    TD_ACTION_CIRCUITCURIOS_REPO,
-    TD_ACTION_CUSTOM_1,
-    TD_ACTION_CUSTOM_2,
-    TD_ACTION_CUSTOM_3,
-    TD_ACTION_CUSTOM_4,
-    TD_ACTION_COUNT
+enum legacy_tap_dance_action_id {
+    LEGACY_TD_ACTION_NONE = 0,
+    LEGACY_TD_ACTION_SCREENSHOT,
+    LEGACY_TD_ACTION_CLIPBOARD,
+    LEGACY_TD_ACTION_TASK_MANAGER,
+    LEGACY_TD_ACTION_EXPLORER,
+    LEGACY_TD_ACTION_RUN,
+    LEGACY_TD_ACTION_CLOSE_WINDOW,
+    LEGACY_TD_ACTION_DESKTOP,
+    LEGACY_TD_ACTION_SCREEN_RECORD,
+    LEGACY_TD_ACTION_CIRCUITCURIOS_REPO,
+    LEGACY_TD_ACTION_CUSTOM_1,
+    LEGACY_TD_ACTION_CUSTOM_2,
+    LEGACY_TD_ACTION_CUSTOM_3,
+    LEGACY_TD_ACTION_CUSTOM_4,
+    LEGACY_TD_ACTION_COUNT
 };
 
 typedef struct {
     uint8_t action[MATRIX_ROWS][MATRIX_COLS];
-    uint16_t custom_action[TAP_DANCE_CUSTOM_ACTION_COUNT];
+    uint16_t custom_action[4];
+} legacy_tap_dance_editor_storage_t;
+
+typedef struct {
+    uint32_t magic;
+    uint16_t double_keycode[MATRIX_ROWS][MATRIX_COLS];
 } tap_dance_editor_storage_t;
 
 typedef enum {
@@ -58,16 +62,16 @@ typedef struct {
     bool pressed;
     uint16_t timer;
     uint16_t single_keycode;
-    uint8_t action;
+    uint16_t double_keycode;
 } tap_dance_position_state_t;
 
-STATIC_ASSERT(sizeof(tap_dance_editor_storage_t) == TAP_DANCE_CONFIG_RESERVED_SIZE, "Tap dance editor EEPROM reservation must stay exactly 32 bytes");
+STATIC_ASSERT(sizeof(legacy_tap_dance_editor_storage_t) == 32, "Legacy tap dance storage must stay 32 bytes");
+STATIC_ASSERT(sizeof(tap_dance_editor_storage_t) == TAP_DANCE_CONFIG_RESERVED_SIZE, "Tap dance editor EEPROM reservation must stay exactly 52 bytes");
 
 void via_custom_value_command_kb(uint8_t *data, uint8_t length);
 
 static tap_dance_editor_storage_t tap_dance_config;
 static tap_dance_position_state_t tap_dance_state = {0};
-static uint8_t tap_dance_selected_position = 4; // R1/C0
 
 static bool tap_dance_position_valid(uint8_t row, uint8_t col) {
     return row < MATRIX_ROWS && col < MATRIX_COLS;
@@ -80,9 +84,9 @@ static bool tap_dance_position_editable(uint8_t row, uint8_t col) {
 }
 
 static uint16_t tap_dance_resolve_keycode(uint16_t keycode) {
-    // QK_KB_0..7 are the friendly VIA custom shortcuts. When they are used
-    // inside this position-based tap-dance engine, resolve them to the actual
-    // Windows chords because register_code16() does not run process_record_kb().
+    // QK_KB_0..7 are the friendly VIA custom shortcuts. Resolve them to the
+    // actual Windows chords because register_code16() does not call
+    // process_record_kb() for nested tap-dance actions.
     switch (keycode) {
         case QK_KB_0:
             return LGUI(LSFT(KC_S));
@@ -105,73 +109,42 @@ static uint16_t tap_dance_resolve_keycode(uint16_t keycode) {
     }
 }
 
-static uint16_t tap_dance_builtin_action_keycode(uint8_t action) {
-    switch (action) {
-        case TD_ACTION_SCREENSHOT:
-            return LGUI(LSFT(KC_S));
-        case TD_ACTION_CLIPBOARD:
-            return LGUI(KC_V);
-        case TD_ACTION_TASK_MANAGER:
-            return LCTL(LSFT(KC_ESC));
-        case TD_ACTION_EXPLORER:
-            return LGUI(KC_E);
-        case TD_ACTION_RUN:
-            return LGUI(KC_R);
-        case TD_ACTION_CLOSE_WINDOW:
-            return LALT(KC_F4);
-        case TD_ACTION_DESKTOP:
-            return LGUI(KC_D);
-        case TD_ACTION_SCREEN_RECORD:
-            return LGUI(LALT(KC_R));
-        default:
-            return KC_NO;
-    }
+static void tap_dance_open_circuitcurios_repo(void) {
+    tap_code16(LGUI(KC_R));
+    wait_ms(250);
+    SEND_STRING("C:\\GitHub\\CircuitCurios-brand-system");
+    tap_code(KC_ENT);
 }
 
-static uint16_t tap_dance_custom_action_keycode(uint8_t action) {
-    if (action < TD_ACTION_CUSTOM_1 || action > TD_ACTION_CUSTOM_4) {
-        return KC_NO;
-    }
-
-    uint8_t index = (uint8_t)(action - TD_ACTION_CUSTOM_1);
-    return tap_dance_resolve_keycode(tap_dance_config.custom_action[index]);
-}
-
-static void tap_dance_action_press(uint8_t action) {
-    if (action == TD_ACTION_CIRCUITCURIOS_REPO) {
-        tap_code16(LGUI(KC_R));
-        wait_ms(250);
-        SEND_STRING("C:\\GitHub\\CircuitCurios-brand-system");
-        tap_code(KC_ENT);
+static void tap_dance_double_press(uint16_t keycode) {
+    if (keycode == QK_KB_8) {
+        tap_dance_open_circuitcurios_repo();
         return;
     }
 
-    uint16_t keycode = tap_dance_builtin_action_keycode(action);
-    if (keycode == KC_NO) {
-        keycode = tap_dance_custom_action_keycode(action);
-    }
-
+    keycode = tap_dance_resolve_keycode(keycode);
     if (keycode != KC_NO) {
         register_code16(keycode);
     }
 }
 
-static void tap_dance_action_release(uint8_t action) {
-    if (action == TD_ACTION_CIRCUITCURIOS_REPO) {
+static void tap_dance_double_release(uint16_t keycode) {
+    if (keycode == QK_KB_8) {
         return;
     }
 
-    uint16_t keycode = tap_dance_builtin_action_keycode(action);
-    if (keycode == KC_NO) {
-        keycode = tap_dance_custom_action_keycode(action);
-    }
-
+    keycode = tap_dance_resolve_keycode(keycode);
     if (keycode != KC_NO) {
         unregister_code16(keycode);
     }
 }
 
 static void tap_dance_single_press(uint16_t keycode) {
+    if (keycode == QK_KB_8) {
+        tap_dance_open_circuitcurios_repo();
+        return;
+    }
+
     keycode = tap_dance_resolve_keycode(keycode);
     if (keycode != KC_NO) {
         register_code16(keycode);
@@ -179,6 +152,10 @@ static void tap_dance_single_press(uint16_t keycode) {
 }
 
 static void tap_dance_single_release(uint16_t keycode) {
+    if (keycode == QK_KB_8) {
+        return;
+    }
+
     keycode = tap_dance_resolve_keycode(keycode);
     if (keycode != KC_NO) {
         unregister_code16(keycode);
@@ -192,7 +169,7 @@ static void tap_dance_state_clear(void) {
     tap_dance_state.pressed = false;
     tap_dance_state.timer = 0;
     tap_dance_state.single_keycode = KC_NO;
-    tap_dance_state.action = TD_ACTION_NONE;
+    tap_dance_state.double_keycode = KC_NO;
 }
 
 static void tap_dance_finish_single(bool keep_held) {
@@ -207,26 +184,58 @@ static void tap_dance_finish_single(bool keep_held) {
 }
 
 static void tap_dance_config_defaults(void) {
+    tap_dance_config.magic = TAP_DANCE_CONFIG_MAGIC;
+
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
         for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-            tap_dance_config.action[row][col] = TD_ACTION_NONE;
+            tap_dance_config.double_keycode[row][col] = KC_NO;
         }
     }
 
-    for (uint8_t i = 0; i < TAP_DANCE_CUSTOM_ACTION_COUNT; i++) {
-        tap_dance_config.custom_action[i] = KC_NO;
-    }
-
     // Requested base-layer defaults.
-    tap_dance_config.action[1][0] = TD_ACTION_SCREENSHOT;
-    tap_dance_config.action[2][0] = TD_ACTION_CLIPBOARD;
-    tap_dance_config.action[3][3] = TD_ACTION_CIRCUITCURIOS_REPO;
+    tap_dance_config.double_keycode[1][0] = QK_KB_0; // Screenshot
+    tap_dance_config.double_keycode[2][0] = QK_KB_1; // Clipboard
+    tap_dance_config.double_keycode[3][3] = QK_KB_8; // CircuitCurios repo
 }
 
-static bool tap_dance_config_is_valid(void) {
+static uint16_t tap_dance_legacy_action_to_keycode(uint8_t action, const legacy_tap_dance_editor_storage_t *legacy) {
+    switch (action) {
+        case LEGACY_TD_ACTION_NONE:
+            return KC_NO;
+        case LEGACY_TD_ACTION_SCREENSHOT:
+            return QK_KB_0;
+        case LEGACY_TD_ACTION_CLIPBOARD:
+            return QK_KB_1;
+        case LEGACY_TD_ACTION_TASK_MANAGER:
+            return QK_KB_2;
+        case LEGACY_TD_ACTION_EXPLORER:
+            return QK_KB_3;
+        case LEGACY_TD_ACTION_RUN:
+            return QK_KB_4;
+        case LEGACY_TD_ACTION_CLOSE_WINDOW:
+            return QK_KB_5;
+        case LEGACY_TD_ACTION_DESKTOP:
+            return QK_KB_6;
+        case LEGACY_TD_ACTION_SCREEN_RECORD:
+            return QK_KB_7;
+        case LEGACY_TD_ACTION_CIRCUITCURIOS_REPO:
+            return QK_KB_8;
+        case LEGACY_TD_ACTION_CUSTOM_1:
+        case LEGACY_TD_ACTION_CUSTOM_2:
+        case LEGACY_TD_ACTION_CUSTOM_3:
+        case LEGACY_TD_ACTION_CUSTOM_4: {
+            uint8_t index = (uint8_t)(action - LEGACY_TD_ACTION_CUSTOM_1);
+            return legacy->custom_action[index];
+        }
+        default:
+            return KC_NO;
+    }
+}
+
+static bool tap_dance_legacy_config_is_valid(const legacy_tap_dance_editor_storage_t *legacy) {
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
         for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-            if (tap_dance_config.action[row][col] >= TD_ACTION_COUNT) {
+            if (legacy->action[row][col] >= LEGACY_TD_ACTION_COUNT) {
                 return false;
             }
         }
@@ -241,13 +250,24 @@ static void tap_dance_editor_save(void) {
 static void tap_dance_editor_load(void) {
     eeprom_read_block(&tap_dance_config, (const void *)(uintptr_t)TAP_DANCE_CONFIG_EEPROM_ADDR, sizeof(tap_dance_config));
 
-    // The previous slot-based format starts with its magic bytes, which are
-    // outside the valid action-id range. That makes this a safe one-time
-    // migration without needing any more EEPROM bytes.
-    if (!tap_dance_config_is_valid()) {
-        tap_dance_config_defaults();
-        tap_dance_editor_save();
+    if (tap_dance_config.magic == TAP_DANCE_CONFIG_MAGIC) {
+        return;
     }
+
+    legacy_tap_dance_editor_storage_t legacy;
+    eeprom_read_block(&legacy, (const void *)(uintptr_t)TAP_DANCE_OLD_CONFIG_EEPROM_ADDR, sizeof(legacy));
+
+    tap_dance_config_defaults();
+
+    if (tap_dance_legacy_config_is_valid(&legacy)) {
+        for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
+            for (uint8_t col = 0; col < MATRIX_COLS; col++) {
+                tap_dance_config.double_keycode[row][col] = tap_dance_legacy_action_to_keycode(legacy.action[row][col], &legacy);
+            }
+        }
+    }
+
+    tap_dance_editor_save();
 }
 
 static void tap_dance_migrate_legacy_matrix_positions(void) {
@@ -290,16 +310,6 @@ static void tap_dance_editor_set_value(uint8_t *data) {
     uint8_t value_id = data[0];
 
     switch (value_id) {
-        case TAP_DANCE_VALUE_POSITION: {
-            uint8_t position = data[1];
-            uint8_t row = position / MATRIX_COLS;
-            uint8_t col = position % MATRIX_COLS;
-            if (tap_dance_position_editable(row, col)) {
-                tap_dance_selected_position = position;
-            }
-            break;
-        }
-
         case TAP_DANCE_VALUE_SINGLE: {
             uint8_t row = data[1];
             uint8_t col = data[2];
@@ -312,23 +322,14 @@ static void tap_dance_editor_set_value(uint8_t *data) {
             break;
         }
 
-        case TAP_DANCE_VALUE_ACTION: {
+        case TAP_DANCE_VALUE_DOUBLE: {
             uint8_t row = data[1];
             uint8_t col = data[2];
-            uint8_t action = data[3];
-            if (tap_dance_position_editable(row, col) && action < TD_ACTION_COUNT) {
-                tap_dance_config.action[row][col] = action;
-            }
-            break;
-        }
-
-        case TAP_DANCE_VALUE_CUSTOM_ACTION: {
-            uint8_t index = data[1];
-            if (index >= TAP_DANCE_CUSTOM_ACTION_COUNT) {
+            if (!tap_dance_position_editable(row, col)) {
                 break;
             }
 
-            tap_dance_config.custom_action[index] = ((uint16_t)data[2] << 8) | data[3];
+            tap_dance_config.double_keycode[row][col] = ((uint16_t)data[3] << 8) | data[4];
             break;
         }
     }
@@ -338,10 +339,6 @@ static void tap_dance_editor_get_value(uint8_t *data) {
     uint8_t value_id = data[0];
 
     switch (value_id) {
-        case TAP_DANCE_VALUE_POSITION:
-            data[1] = tap_dance_selected_position;
-            break;
-
         case TAP_DANCE_VALUE_SINGLE: {
             uint8_t row = data[1];
             uint8_t col = data[2];
@@ -355,18 +352,16 @@ static void tap_dance_editor_get_value(uint8_t *data) {
             break;
         }
 
-        case TAP_DANCE_VALUE_ACTION: {
+        case TAP_DANCE_VALUE_DOUBLE: {
             uint8_t row = data[1];
             uint8_t col = data[2];
-            data[3] = tap_dance_position_editable(row, col) ? tap_dance_config.action[row][col] : TD_ACTION_NONE;
-            break;
-        }
+            uint16_t keycode = KC_NO;
+            if (tap_dance_position_editable(row, col)) {
+                keycode = tap_dance_config.double_keycode[row][col];
+            }
 
-        case TAP_DANCE_VALUE_CUSTOM_ACTION: {
-            uint8_t index = data[1];
-            uint16_t keycode = index < TAP_DANCE_CUSTOM_ACTION_COUNT ? tap_dance_config.custom_action[index] : KC_NO;
-            data[2] = (uint8_t)(keycode >> 8);
-            data[3] = (uint8_t)(keycode & 0xFF);
+            data[3] = (uint8_t)(keycode >> 8);
+            data[4] = (uint8_t)(keycode & 0xFF);
             break;
         }
     }
@@ -427,7 +422,7 @@ bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record) {
                 break;
 
             case TD_POSITION_DOUBLE_HELD:
-                tap_dance_action_release(tap_dance_state.action);
+                tap_dance_double_release(tap_dance_state.double_keycode);
                 tap_dance_state_clear();
                 break;
 
@@ -451,7 +446,7 @@ bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record) {
         if (timer_elapsed(tap_dance_state.timer) > TAPPING_TERM) {
             tap_dance_finish_single(false);
         } else {
-            tap_dance_action_press(tap_dance_state.action);
+            tap_dance_double_press(tap_dance_state.double_keycode);
             tap_dance_state.stage = TD_POSITION_DOUBLE_HELD;
             tap_dance_state.pressed = true;
             return true;
@@ -467,8 +462,8 @@ bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
 
-    uint8_t action = tap_dance_config.action[row][col];
-    if (action == TD_ACTION_NONE || action >= TD_ACTION_COUNT) {
+    uint16_t double_keycode = tap_dance_config.double_keycode[row][col];
+    if (double_keycode == KC_NO) {
         return false;
     }
 
@@ -478,7 +473,7 @@ bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record) {
     tap_dance_state.pressed = true;
     tap_dance_state.timer = timer_read();
     tap_dance_state.single_keycode = keycode;
-    tap_dance_state.action = action;
+    tap_dance_state.double_keycode = double_keycode;
     return true;
 }
 
