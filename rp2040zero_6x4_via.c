@@ -1,11 +1,12 @@
 #include QMK_KEYBOARD_H
+#include "sendstring_german.h"
 
 #ifdef VIA_ENABLE
 #    include "via.h"
 #    include "dynamic_keymap.h"
 #endif
 
-// Editable VIA tap-dance slots implemented in tap_dance_editor.c.
+// Coordinate-based VIA tap dances implemented in tap_dance_editor.c.
 void tap_dance_editor_pre_process(uint16_t keycode, keyrecord_t *record);
 bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record);
 void tap_dance_editor_task(void);
@@ -75,14 +76,14 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
 #endif
 
 bool pre_process_record_kb(uint16_t keycode, keyrecord_t *record) {
-    // If a first TD1..TD4 tap is waiting and another key starts, finish the
-    // single-tap action before QMK processes the interrupting key.
+    // If a position-based tap dance is waiting and another key starts, finish
+    // the single-tap action before QMK processes the interrupting key.
     tap_dance_editor_pre_process(keycode, record);
     return pre_process_record_user(keycode, record);
 }
 
 void matrix_scan_kb(void) {
-    // Resolve pending TD1..TD4 single taps when their double-tap window ends.
+    // Resolve pending position-based single taps when their double-tap window ends.
     tap_dance_editor_task();
     matrix_scan_user();
 }
@@ -94,8 +95,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
 
-    // QK_KB_8..11 are VIA-visible TD1..TD4 aliases. They need both press and
-    // release events, so handle them before the press-only shortcut section.
+    // Position-based tap dances need both press and release events.
     if (tap_dance_editor_process(keycode, record)) {
         return false;
     }
@@ -105,7 +105,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     }
 
     // QK_KB_0.. map 1:1 to VIA customKeycodes[0..]. This gives the shortcuts
-    // friendly names in VIA while keeping their actual Windows chords here.
+    // friendly names in VIA while keeping their actual Windows actions here.
     switch (keycode) {
         case QK_KB_0: // Screenshot / Snipping Tool
             tap_code16(LGUI(LSFT(KC_S)));
@@ -130,6 +130,12 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             return false;
         case QK_KB_7: // Screen recording toggle
             tap_code16(LGUI(LALT(KC_R)));
+            return false;
+        case QK_KB_8: // CircuitCurios repository
+            tap_code16(LGUI(KC_R));
+            wait_ms(250);
+            SEND_STRING("C:\\GitHub\\CircuitCurios-brand-system");
+            tap_code(KC_ENT);
             return false;
         default:
             return true;
