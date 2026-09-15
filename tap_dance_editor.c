@@ -31,6 +31,7 @@ typedef struct {
 STATIC_ASSERT(sizeof(tap_dance_editor_storage_t) <= TAP_DANCE_CONFIG_RESERVED_SIZE, "Tap dance editor EEPROM reservation is too small");
 
 extern tap_dance_action_t tap_dance_actions[];
+void via_custom_value_command_kb(uint8_t *data, uint8_t length);
 
 static tap_dance_pair_t *editable_tap_dance_pair(uint8_t slot) {
     if (slot >= EDITABLE_TAP_DANCE_COUNT) {
