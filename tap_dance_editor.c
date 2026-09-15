@@ -65,6 +65,33 @@ static tap_dance_pair_t *editable_tap_dance_pair(uint8_t slot) {
     return (tap_dance_pair_t *)tap_dance_actions[editable_tap_dance_action_index[slot]].user_data;
 }
 
+static uint16_t tap_dance_editor_normalize_keycode(uint16_t keycode) {
+    // VIA customKeycodes[0..7] are keyboard-level pseudo keycodes. Those only
+    // execute when they travel through process_record_kb(), which nested tap
+    // dance actions do not do. Convert them to their real Windows chords when
+    // the user selects them inside Single Tap / Double Tap.
+    switch (keycode) {
+        case QK_KB_0:
+            return LGUI(LSFT(KC_S));
+        case QK_KB_1:
+            return LGUI(KC_V);
+        case QK_KB_2:
+            return LCTL(LSFT(KC_ESC));
+        case QK_KB_3:
+            return LGUI(KC_E);
+        case QK_KB_4:
+            return LGUI(KC_R);
+        case QK_KB_5:
+            return LALT(KC_F4);
+        case QK_KB_6:
+            return LGUI(KC_D);
+        case QK_KB_7:
+            return LGUI(LALT(KC_R));
+        default:
+            return keycode;
+    }
+}
+
 static bool tap_dance_alias_slot(uint16_t keycode, uint8_t *slot) {
     if (keycode < TAP_DANCE_ALIAS_FIRST || keycode > TAP_DANCE_ALIAS_LAST) {
         return false;
@@ -141,7 +168,7 @@ static void tap_dance_editor_set_value(uint8_t *data) {
         return;
     }
 
-    uint16_t keycode = ((uint16_t)data[2] << 8) | data[3];
+    uint16_t keycode = tap_dance_editor_normalize_keycode(((uint16_t)data[2] << 8) | data[3]);
 
     switch (value_id) {
         case TAP_DANCE_VALUE_SINGLE:
