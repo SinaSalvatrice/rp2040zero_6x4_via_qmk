@@ -5,6 +5,11 @@
 #    include "dynamic_keymap.h"
 #endif
 
+// Editable VIA tap-dance slots implemented in tap_dance_editor.c.
+void tap_dance_editor_pre_process(uint16_t keycode, keyrecord_t *record);
+bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record);
+void tap_dance_editor_task(void);
+
 #ifdef VIA_ENABLE
 static bool via_key_is_locked(uint8_t layer, uint8_t row, uint8_t column) {
     return layer <= 2 && row == (MATRIX_ROWS - 1) && column < MATRIX_COLS;
@@ -69,10 +74,29 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
 }
 #endif
 
+bool pre_process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    // If a first TD1..TD4 tap is waiting and another key starts, finish the
+    // single-tap action before QMK processes the interrupting key.
+    tap_dance_editor_pre_process(keycode, record);
+    return pre_process_record_user(keycode, record);
+}
+
+void matrix_scan_kb(void) {
+    // Resolve pending TD1..TD4 single taps when their double-tap window ends.
+    tap_dance_editor_task();
+    matrix_scan_user();
+}
+
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     // Keep the keymap-level processing, including positional RGB and keymap
     // actions, in the normal QMK chain.
     if (!process_record_user(keycode, record)) {
+        return false;
+    }
+
+    // QK_KB_8..11 are VIA-visible TD1..TD4 aliases. They need both press and
+    // release events, so handle them before the press-only shortcut section.
+    if (tap_dance_editor_process(keycode, record)) {
         return false;
     }
 
