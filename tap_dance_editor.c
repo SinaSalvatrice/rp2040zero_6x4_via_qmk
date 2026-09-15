@@ -1,6 +1,7 @@
 #include QMK_KEYBOARD_H
 
 #include "eeprom.h"
+#include "timer.h"
 #include "via.h"
 
 #define TAP_DANCE_VIA_CHANNEL 6
@@ -10,10 +11,17 @@
 #define TAP_DANCE_CONFIG_MAGIC 0x54445031UL
 #define TAP_DANCE_CONFIG_RESERVED_SIZE 32U
 #define TAP_DANCE_CONFIG_EEPROM_ADDR (DYNAMIC_KEYMAP_EEPROM_MAX_ADDR + 1U)
+#define TAP_DANCE_ALIAS_FIRST QK_KB_8
+#define TAP_DANCE_ALIAS_LAST QK_KB_11
+
+#ifndef TAPPING_TERM
+#    define TAPPING_TERM 200
+#endif
 
 // These are the first four tap-dance entries in keymaps/via/keymap.c.
-// Keeping the indexes stable means the existing VIA dynamic keymap does not
-// need to be rewritten when the editable actions change.
+// The same four actions are also exposed as VIA custom keycodes TD1..TD4,
+// so a slot can be placed on any editable matrix position without changing
+// the actual tap-dance action indexes.
 static const uint8_t editable_tap_dance_action_index[EDITABLE_TAP_DANCE_COUNT] = {0, 1, 2, 3};
 
 static const tap_dance_pair_t editable_tap_dance_defaults[EDITABLE_TAP_DANCE_COUNT] = {
@@ -28,10 +36,26 @@ typedef struct {
     tap_dance_pair_t pairs[EDITABLE_TAP_DANCE_COUNT];
 } tap_dance_editor_storage_t;
 
+typedef enum {
+    TD_ALIAS_IDLE = 0,
+    TD_ALIAS_WAIT_SECOND,
+    TD_ALIAS_SINGLE_HELD,
+    TD_ALIAS_DOUBLE_HELD,
+} tap_dance_alias_stage_t;
+
+typedef struct {
+    tap_dance_alias_stage_t stage;
+    uint8_t slot;
+    bool pressed;
+    uint16_t timer;
+} tap_dance_alias_state_t;
+
 STATIC_ASSERT(sizeof(tap_dance_editor_storage_t) <= TAP_DANCE_CONFIG_RESERVED_SIZE, "Tap dance editor EEPROM reservation is too small");
 
 extern tap_dance_action_t tap_dance_actions[];
 void via_custom_value_command_kb(uint8_t *data, uint8_t length);
+
+static tap_dance_alias_state_t alias_state = {0};
 
 static tap_dance_pair_t *editable_tap_dance_pair(uint8_t slot) {
     if (slot >= EDITABLE_TAP_DANCE_COUNT) {
@@ -39,6 +63,38 @@ static tap_dance_pair_t *editable_tap_dance_pair(uint8_t slot) {
     }
 
     return (tap_dance_pair_t *)tap_dance_actions[editable_tap_dance_action_index[slot]].user_data;
+}
+
+static bool tap_dance_alias_slot(uint16_t keycode, uint8_t *slot) {
+    if (keycode < TAP_DANCE_ALIAS_FIRST || keycode > TAP_DANCE_ALIAS_LAST) {
+        return false;
+    }
+
+    *slot = (uint8_t)(keycode - TAP_DANCE_ALIAS_FIRST);
+    return *slot < EDITABLE_TAP_DANCE_COUNT;
+}
+
+static void tap_dance_alias_clear(void) {
+    alias_state.stage = TD_ALIAS_IDLE;
+    alias_state.slot = 0;
+    alias_state.pressed = false;
+    alias_state.timer = 0;
+}
+
+static void tap_dance_alias_finish_single(bool keep_held) {
+    tap_dance_pair_t *pair = editable_tap_dance_pair(alias_state.slot);
+    if (pair == NULL) {
+        tap_dance_alias_clear();
+        return;
+    }
+
+    if (keep_held) {
+        register_code16(pair->kc1);
+        alias_state.stage = TD_ALIAS_SINGLE_HELD;
+    } else {
+        tap_code16(pair->kc1);
+        tap_dance_alias_clear();
+    }
 }
 
 static void tap_dance_editor_apply_pairs(const tap_dance_pair_t *pairs) {
@@ -142,6 +198,101 @@ static void tap_dance_editor_command(uint8_t *data, uint8_t length) {
         default:
             *command_id = id_unhandled;
             break;
+    }
+}
+
+// Resolve an unfinished first tap before another key is processed. A second
+// press of the same TD slot is left alone so it can become the double tap.
+void tap_dance_editor_pre_process(uint16_t keycode, keyrecord_t *record) {
+    if (!record->event.pressed || alias_state.stage != TD_ALIAS_WAIT_SECOND) {
+        return;
+    }
+
+    uint8_t incoming_slot = 0;
+    if (tap_dance_alias_slot(keycode, &incoming_slot) && incoming_slot == alias_state.slot) {
+        return;
+    }
+
+    tap_dance_alias_finish_single(alias_state.pressed);
+}
+
+// Handle the VIA-visible TD1..TD4 aliases (QK_KB_8..QK_KB_11). This mirrors
+// ACTION_TAP_DANCE_DOUBLE closely enough to preserve single-vs-double behavior,
+// while making the slot itself assignable through VIA's normal Custom palette.
+bool tap_dance_editor_process(uint16_t keycode, keyrecord_t *record) {
+    uint8_t slot = 0;
+    if (!tap_dance_alias_slot(keycode, &slot)) {
+        return false;
+    }
+
+    if (record->event.pressed) {
+        if (alias_state.stage == TD_ALIAS_WAIT_SECOND && alias_state.slot == slot) {
+            if (alias_state.pressed) {
+                return true;
+            }
+
+            if (timer_elapsed(alias_state.timer) > TAPPING_TERM) {
+                tap_dance_alias_finish_single(false);
+            } else {
+                tap_dance_pair_t *pair = editable_tap_dance_pair(slot);
+                if (pair != NULL) {
+                    register_code16(pair->kc2);
+                    alias_state.stage = TD_ALIAS_DOUBLE_HELD;
+                    alias_state.pressed = true;
+                } else {
+                    tap_dance_alias_clear();
+                }
+                return true;
+            }
+        }
+
+        if (alias_state.stage == TD_ALIAS_IDLE) {
+            alias_state.stage = TD_ALIAS_WAIT_SECOND;
+            alias_state.slot = slot;
+            alias_state.pressed = true;
+            alias_state.timer = timer_read();
+        }
+        return true;
+    }
+
+    if (alias_state.slot != slot) {
+        return true;
+    }
+
+    switch (alias_state.stage) {
+        case TD_ALIAS_WAIT_SECOND:
+            alias_state.pressed = false;
+            break;
+
+        case TD_ALIAS_SINGLE_HELD: {
+            tap_dance_pair_t *pair = editable_tap_dance_pair(slot);
+            if (pair != NULL) {
+                unregister_code16(pair->kc1);
+            }
+            tap_dance_alias_clear();
+            break;
+        }
+
+        case TD_ALIAS_DOUBLE_HELD: {
+            tap_dance_pair_t *pair = editable_tap_dance_pair(slot);
+            if (pair != NULL) {
+                unregister_code16(pair->kc2);
+            }
+            tap_dance_alias_clear();
+            break;
+        }
+
+        case TD_ALIAS_IDLE:
+        default:
+            break;
+    }
+
+    return true;
+}
+
+void tap_dance_editor_task(void) {
+    if (alias_state.stage == TD_ALIAS_WAIT_SECOND && timer_elapsed(alias_state.timer) > TAPPING_TERM) {
+        tap_dance_alias_finish_single(alias_state.pressed);
     }
 }
 
