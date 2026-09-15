@@ -1,7 +1,5 @@
 #pragma once
 
-#define ENCODER_BTN_PIN GP10
-
 // RGB Matrix defaults. WS2812 pin and LED layout live in keyboard.json.
 #define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120
 #define RGB_MATRIX_DEFAULT_HUE 149
@@ -22,9 +20,14 @@
 // VIA custom layer-lighting UI + persistent settings.
 // Each of the five layers stores two independently selectable colors,
 // an effect and its speed.
-#define VIA_FIRMWARE_VERSION 9
+#define VIA_FIRMWARE_VERSION 10
 #define EECONFIG_USER_DATA_SIZE 32
 #define EECONFIG_USER_DATA_VERSION 5
+
+// RP2040 flash wear-leveling exposes 4096 logical EEPROM bytes. Keep the
+// existing VIA keymap/macro addresses stable and reserve only bytes 4064..4095
+// for persistent editable tap-dance pairs.
+#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 4063
 
 #define USB_SUSPEND_WAKEUP_DELAY 0
 #define DEBOUNCE 5
